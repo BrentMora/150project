@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        #gameCanvas { border: 2px solid black; display: block; margin: 20px 0; }
+        #controls { margin: 20px 0; }
+        button { margin: 5px; padding: 10px 20px; }
+        #status { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Game Client</h1>
+    
+    <div id="loginScreen">
+        <input type="text" id="playerName" placeholder="Enter your name" />
+        <button onclick="connect()">Connect</button>
+    </div>
+    
+    <div id="gameScreen" style="display: none;">
+        <div id="status">Connected</div>
+        <canvas id="gameCanvas" width="640" height="480"></canvas>
+        <div id="controls">
+            <p>Use arrow keys to move</p>
+            <div>
+                <button onclick="move('North')">↑</button>
+            </div>
+            <div>
+                <button onclick="move('West')">←</button>
+                <button onclick="move('South')">↓</button>
+                <button onclick="move('East')">→</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let gameState = null;
+        let myPlayerId = null;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function connect() {
+            const name = document.getElementById('playerName').value;
+            if (!name) {
+                alert('Please enter your name');
+                return;
+            }
+
+            ws = new WebSocket('ws://localhost:9160');
+            
+            ws.onopen = () => {
+                console.log('Connected to server');
+                ws.send(JSON.stringify({ tag: 'Join', contents: name }));
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                console.log('Received:', msg);
+                handleMessage(msg);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected');
+                document.getElementById('status').textContent = 'Disconnected';
+                document.getElementById('status').style.color = 'red';
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function handleMessage(msg) {
+            if (msg.tag === 'Welcome') {
+                myPlayerId = msg.contents[0];
+                gameState = msg.contents[1];
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('gameScreen').style.display = 'block';
+                render();
+            } else if (msg.tag === 'StateUpdate') {
+                gameState = msg.contents;
+                render();
+            } else if (msg.tag === 'PlayerJoined') {
+                const player = msg.contents;
+                if (gameState) {
+                    gameState.players[player.playerId] = player;
+                    render();
+                }
+            } else if (msg.tag === 'PlayerLeft') {
+                const playerId = msg.contents;
+                if (gameState && gameState.players) {
+                    delete gameState.players[playerId];
+                    render();
+                }
+            }
+        }
+
+        function move(direction) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ tag: 'Move', contents: direction }));
+            }
+        }
+
+        function render() {
+            if (!gameState) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw all players
+            for (const playerId in gameState.players) {
+                const player = gameState.players[playerId];
+                const isMe = playerId === myPlayerId;
+                const size = isMe ? 15 : 10;
+
+                ctx.fillStyle = player.playerColor;
+                ctx.fillRect(
+                    player.playerPos.posX,
+                    player.playerPos.posY,
+                    size,
+                    size
+                );
+
+                // Draw player ID
+                ctx.fillStyle = 'black';
+                ctx.font = '10px Arial';
+                ctx.fillText(
+                    isMe ? 'YOU' : playerId.substring(0, 4),
+                    player.playerPos.posX,
+                    player.playerPos.posY - 5
+                );
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            const key = e.keyCode;
+            if (key === 37) move('West');   // Left
+            if (key === 38) move('North');  // Up
+            if (key === 39) move('East');   // Right
+            if (key === 40) move('South');  // Down
+        });
+    </script>
+</body>
+</html>
