@@ -3,10 +3,11 @@
 
 module Game.Types where
 
-import Data.Aeson
-import Data.Text (Text)
-import GHC.Generics
-import qualified Data.Map.Strict as Map
+import Data.Aeson -- For JSON Fetching
+import Data.Text (Text) -- imports Text type (similar to String)
+import GHC.Generics -- to derive JSON Structure
+import qualified Data.Map.Strict as Map -- Map == Dictionary
+-- "import qualified" saves from conflict with prelude functions
 
 -- | Represents a 2D position in the game world
 data Position = Position
@@ -53,6 +54,8 @@ data ClientMessage
   | Disconnect      -- Leave the game
   deriving (Show, Eq, Generic)
 
+-- Client Message == Player Actions
+
 -- Automatically generate JSON encoding/decoding for ClientMessage
 instance ToJSON ClientMessage
 instance FromJSON ClientMessage
@@ -66,6 +69,13 @@ data ServerMessage
   | Error Text              -- Error message (e.g., invalid action)
   deriving (Show, Eq, Generic)
 
+-- Server Messages == Updating Messages
+
 -- Automatically generate JSON encoding/decoding for ServerMessage
 instance ToJSON ServerMessage
 instance FromJSON ServerMessage
+
+-- General Notes:
+-- Each Data type has:
+  -- instance ToJSON <Data type>
+  -- instance FromJSON <Data type>

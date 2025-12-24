@@ -2,12 +2,12 @@
 
 module Main where
 
-import Network.HTTP.Types (status400)
+import Network.HTTP.Types (status400) -- Defines "400 Bad Request"
 
 -- Concurrency and STM for thread-safe state management
-import Control.Concurrent.STM
-import Control.Exception (finally)
-import Control.Monad (forever, forM_)
+import Control.Concurrent.STM -- concurrency via atomic operations "atomically $"
+import Control.Exception (finally) -- cleanup
+import Control.Monad (forever, forM_) -- server loops
 
 -- JSON and data handling
 import Data.Aeson
@@ -19,17 +19,20 @@ import qualified Data.Map.Strict as Map
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Handler.WebSockets
-import Network.WebSockets
+import Network.WebSockets -- actual WebSockets
 
 -- Random generation for player IDs and colors
-import System.Random
+import System.Random -- RNG
 
 -- Our shared game types
-import Game.Types
+import Game.Types -- file path importation
 
 -- Type aliases for clarity
-type ClientId = Text
+type ClientId = Text -- defines a new type ClientID and tells the compiler it is equal to type Text
 type Clients = Map.Map ClientId Connection  -- Map of connected clients
+  -- In the map:
+    -- keys --> Client IDs (Text)
+    -- values --> active WebSocket connections
 
 -- | Server state containing all connected clients and current game state
 -- Uses TVar for thread-safe concurrent access
@@ -37,6 +40,7 @@ data ServerState = ServerState
   { stateClients :: TVar Clients    -- Thread-safe map of connected WebSocket clients
   , stateGame :: TVar GameState     -- Thread-safe game state
   }
+  -- TVar is the transactional shared variable meant to solve race conditions
 
 -- | Main entry point - starts the WebSocket server
 main :: IO ()
@@ -45,24 +49,70 @@ main = do
   state <- newServerState
   -- Run Warp server with WebSocket support, fallback to HTTP app for non-WS requests
   run 9160 $ websocketsOr defaultConnectionOptions (wsApp state) httpApp
+  -- `run` fxn comes from Warp with signature:
+    -- run :: Port -> Application -> IO ()
+
+  -- Parameter Explanations:
+  -- websocketsOr:
+    -- from Network.Wai.Handler.WebSockets
+    -- websocketsOr
+      -- :: ConnectionOptions
+      -- -> ServerApp
+      -- -> Application
+      -- -> Application
+  -- defaultConnectionOptions:
+    -- a default
+  -- (wsApp state):
+    -- wsApp :: ServerState -> ServerApp
+  -- httpApp
+    -- fallback http handler
+    -- :: Application
+
 
 -- | Initialize a new server state with empty clients and game state
 newServerState :: IO ServerState
 newServerState = do
   clients <- newTVarIO Map.empty           -- Create empty clients map
   game <- newTVarIO $ GameState Map.empty  -- Create empty game state
-  return $ ServerState clients game
+  return $ ServerState clients game        -- Compose ServerState
 
 -- | HTTP application for non-WebSocket requests (returns error)
-httpApp :: Application
+httpApp :: Application -- Application type is from Network.Wai
 httpApp _ respond = respond $ responseLBS status400 [] "Not a WebSocket request"
+-- type Application = Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
+-- What this does:
+  -- httpApp is the fallback HTTP handler for requests that are not WebSocket requests...
+  -- ...(aka anything that is outside the scope of the project)
+  -- always responds with 400 Bad Request
+  -- treat as error handler
+  -- Other notes:
+    -- respond() --> sends a response back to the client
+    -- responseLBS --> creates an http response with status400
+    -- [] --> empty headers
+    -- "Not a WebSocket request" --> response body
 
 -- | WebSocket application handler
+-- wsApp :: ServerState -> PendingConnection -> IO ()
 wsApp :: ServerState -> ServerApp
 wsApp state pending = do
   conn <- acceptRequest pending           -- Accept the WebSocket connection
+  -- returns a `connection`
   -- Keep connection alive with ping every 30 seconds, handle client communication
-  withPingThread conn 30 (return ()) $ handleClient state conn
+  withPingThread conn 30 (return ()) $ handleClient state conn -- from Network.WebSockets
+  -- starts a background thread
+  -- sends WebSocket ping frames every 30 seconds
+  -- keeps the connection from timing out
+  -- stops automatically when the handler exits
+
+-- withPingThread
+  -- :: Connection
+  -- -> Int          -- seconds
+  -- -> IO ()        -- action if ping thread dies --> just return()
+  -- -> IO a         -- main action --> handleClient <- pass state and connection
+  -- -> IO a
+
+-- General function: “Given the shared server state, produce a WebSocket handler for one incoming connection.”
+-- Parameters: state pending --> state variable has a pending ServerState?
 
 -- | Handle a new client connection
 -- Expects the first message to be a Join message, then enters main loop
