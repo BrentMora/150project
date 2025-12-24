@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Canvas JavaScript Guide - Miso</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+        }
+        #gameCanvas {
+            background: #000;
+            display: block;
+            margin: 0 auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .info {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 15px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+        }
+        h2 { color: #00ff00; }
+        code {
+            background: #222;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #0ff;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <div class="info">
+        <h2>🎮 Essential Canvas 2D Game Development Guide</h2>
+        <p>This demonstrates core Canvas concepts for 2D game development:</p>
+        
+        <h3>📐 1. Canvas Setup & Basic Drawing</h3>
+        <ul>
+            <li><code>getContext('2d')</code> - Get rendering context</li>
+            <li><code>fillRect(x, y, w, h)</code> - Draw filled rectangles</li>
+            <li><code>strokeRect(x, y, w, h)</code> - Draw rectangle outlines</li>
+            <li><code>clearRect(x, y, w, h)</code> - Clear canvas regions</li>
+            <li><code>fillStyle</code> - Set fill colors</li>
+            <li><code>strokeStyle</code> - Set stroke colors</li>
+        </ul>
+
+        <h3>⏱️ 2. Animation Loop</h3>
+        <ul>
+            <li><code>requestAnimationFrame()</code> - Smooth 60fps animation</li>
+            <li>Delta time calculation - Frame-independent movement</li>
+            <li>FPS counter - Performance monitoring</li>
+            <li>Game loop pattern - Update → Render → Repeat</li>
+        </ul>
+
+        <h3>🎯 3. Sprite Rendering</h3>
+        <ul>
+            <li>Rectangle sprites with <code>fillRect()</code></li>
+            <li>Circle sprites with <code>arc()</code> and <code>fill()</code></li>
+            <li>Drawing with different colors</li>
+            <li>Rendering multiple sprites efficiently</li>
+        </ul>
+
+        <h3>🔄 4. Transformations</h3>
+        <ul>
+            <li><code>save()</code> / <code>restore()</code> - State management</li>
+            <li><code>translate(x, y)</code> - Move coordinate origin</li>
+            <li><code>rotate(angle)</code> - Rotation transformations</li>
+            <li><code>scale(x, y)</code> - Scaling transformations</li>
+        </ul>
+
+        <h3>🎨 5. Advanced Drawing</h3>
+        <ul>
+            <li><code>beginPath()</code> / <code>stroke()</code> / <code>fill()</code> - Custom shapes</li>
+            <li><code>arc()</code> - Circles and arcs</li>
+            <li><code>createLinearGradient()</code> - Linear gradients</li>
+            <li><code>createRadialGradient()</code> - Radial gradients</li>
+            <li><code>shadowColor</code>, <code>shadowBlur</code> - Shadow effects</li>
+            <li><code>globalAlpha</code> - Transparency</li>
+        </ul>
+
+        <h3>⌨️ 6. Input Handling</h3>
+        <ul>
+            <li>Keyboard: <code>keydown</code>, <code>keyup</code> events</li>
+            <li>Mouse: <code>mousemove</code>, <code>mousedown</code>, <code>mouseup</code></li>
+            <li>Key code mapping for game controls</li>
+            <li>Mouse coordinate tracking on canvas</li>
+        </ul>
+
+        <h3>💥 7. Collision Detection</h3>
+        <ul>
+            <li>AABB (Axis-Aligned Bounding Box) collision</li>
+            <li>Circle-to-circle collision</li>
+            <li>Point-in-rectangle testing</li>
+        </ul>
+
+        <h3>🎮 8. Game State Management</h3>
+        <ul>
+            <li>Menu, Playing, Paused, GameOver states</li>
+            <li>Score tracking</li>
+            <li>Entity management (player, enemies, projectiles)</li>
+            <li>Game object lifecycle</li>
+        </ul>
+
+        <h3>🏃 9. Basic Physics</h3>
+        <ul>
+            <li>Velocity-based movement</li>
+            <li>Position updates using delta time</li>
+            <li>Boundary checking</li>
+        </ul>
+    </div>
+
+    <script src="all.js"></script>
+    <script>
+        // Complete Canvas 2D Game Rendering Implementation
+        
+        let canvas, ctx;
+        let gameModel = {
+            player: { x: 400, y: 500, vx: 0, vy: 0, w: 40, h: 40, color: '#0f0', rotation: 0 },
+            enemies: [],
+            projectiles: [],
+            keysPressed: {}
+        };
+
+        function initCanvasRendering() {
+            canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                setTimeout(initCanvasRendering, 100);
+                return;
+            }
+            
+            ctx = canvas.getContext('2d');
+            
+            // Set up keyboard listeners
+            document.addEventListener('keydown', (e) => {
+                gameModel.keysPressed[e.keyCode] = true;
+                
+                // Space to fire
+                if (e.keyCode === 32) {
+                    fireProjectile();
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', (e) => {
+                gameModel.keysPressed[e.keyCode] = false;
+            });
+            
+            // Start game loop
+            gameLoop();
+        }
+
+        function gameLoop(timestamp) {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() {
+            // Input handling - WASD and arrow keys
+            const speed = 200 / 60; // pixels per frame at 60fps
+            
+            if (gameModel.keysPressed[87] || gameModel.keysPressed[38]) { // W or Up
+                gameModel.player.y -= speed;
+            }
+            if (gameModel.keysPressed[83] || gameModel.keysPressed[40]) { // S or Down
+                gameModel.player.y += speed;
+            }
+            if (gameModel.keysPressed[65] || gameModel.keysPressed[37]) { // A or Left
+                gameModel.player.x -= speed;
+            }
+            if (gameModel.keysPressed[68] || gameModel.keysPressed[39]) { // D or Right
+                gameModel.player.x += speed;
+            }
+
+            // Boundary checking
+            gameModel.player.x = Math.max(20, Math.min(780, gameModel.player.x));
+            gameModel.player.y = Math.max(20, Math.min(580, gameModel.player.y));
+
+            // Update projectiles
+            gameModel.projectiles = gameModel.projectiles.filter(p => {
+                p.y -= 10;
+                return p.y > -10;
+            });
+
+            // Update enemies
+            gameModel.enemies = gameModel.enemies.filter(e => {
+                e.x -= 2;
+                return e.x > -50;
+            });
+
+            // Collision detection (AABB)
+            gameModel.projectiles = gameModel.projectiles.filter(proj => {
+                let hit = false;
+                gameModel.enemies = gameModel.enemies.filter(enemy => {
+                    if (checkCollision(proj, enemy)) {
+                        hit = true;
+                        return false;
+                    }
+                    return true;
+                });
+                return !hit;
+            });
+
+            // Rotate player slowly
+            gameModel.player.rotation += 0.02;
+        }
+
+        function render() {
+            // 1. CLEAR CANVAS
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. DRAW BACKGROUND with gradient
+            const bgGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGrad.addColorStop(0, '#1a1a2e');
+            bgGrad.addColorStop(1, '#000');
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 3. RENDER PROJECTILES (simple circles)
+            ctx.fillStyle = '#ffff00';
+            gameModel.projectiles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.w/2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 4. RENDER ENEMIES (rectangles with stroke)
+            gameModel.enemies.forEach(e => {
+                ctx.fillStyle = e.color;
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.fillRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h);
+                ctx.strokeRect(e.x - e.w/2, e.y - e.h/2, e.w, e.h);
+            });
+
+            // 5. RENDER PLAYER with ROTATION TRANSFORMATION
+            ctx.save();
+            ctx.translate(gameModel.player.x, gameModel.player.y);
+            ctx.rotate(gameModel.player.rotation);
+            
+            // Draw player as rotated rectangle
+            ctx.fillStyle = gameModel.player.color;
+            ctx.fillRect(-gameModel.player.w/2, -gameModel.player.h/2, 
+                         gameModel.player.w, gameModel.player.h);
+            
+            // Draw direction indicator
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(-2, -gameModel.player.h/2 - 10, 4, 8);
+            
+            ctx.restore();
+
+            // 6. UI OVERLAY
+            renderUI();
+
+            // 7. ADVANCED DRAWING DEMO (gradients, shadows)
+            renderAdvancedDemo();
+        }
+
+        function renderUI() {
+            ctx.fillStyle = '#0f0';
+            ctx.font = '16px monospace';
+            ctx.fillText(`Enemies: ${gameModel.enemies.length}`, 10, 20);
+            ctx.fillText(`Projectiles: ${gameModel.projectiles.length}`, 10, 40);
+            ctx.fillText(`Position: (${Math.floor(gameModel.player.x)}, ${Math.floor(gameModel.player.y)})`, 10, 60);
+        }
+
+        function renderAdvancedDemo() {
+            // Radial gradient circle in corner
+            const x = canvas.width - 50;
+            const y = 50;
+            const grad = ctx.createRadialGradient(x, y, 5, x, y, 30);
+            grad.addColorStop(0, '#fff');
+            grad.addColorStop(1, '#00f');
+            
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Shadow example
+            ctx.save();
+            ctx.shadowColor = '#0ff';
+            ctx.shadowBlur = 20;
+            ctx.fillStyle = '#0ff';
+            ctx.fillRect(canvas.width - 100, canvas.height - 50, 80, 30);
+            ctx.restore();
+        }
+
+        function checkCollision(a, b) {
+            // AABB collision detection
+            return a.x < b.x + b.w &&
+                   a.x + a.w > b.x &&
+                   a.y < b.y + b.h &&
+                   a.y + a.h > b.y;
+        }
+
+        function fireProjectile() {
+            gameModel.projectiles.push({
+                x: gameModel.player.x,
+                y: gameModel.player.y - 30,
+                w: 8,
+                h: 8,
+                color: '#ff0'
+            });
+        }
+
+        // Expose to Miso app
+        window.gameModel = gameModel;
+        window.initCanvasRendering = initCanvasRendering;
+    </script>
+</body>
+</html>
