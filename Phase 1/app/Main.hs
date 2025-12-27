@@ -35,8 +35,8 @@ import Control.Concurrent (threadDelay)
 
 -- Player represents the blue square controlled by the user
 data Player = Player
-  { playerX :: Float      -- X position on canvas (0-800)
-  , playerY :: Float      -- Y position on canvas (0-600)
+  { playerX :: Float      -- X position on canvas (0-800) * change to 1300 x 1500
+  , playerY :: Float      -- Y position on canvas (0-600) * change to 1300 x 1500
   , playerVelX :: Float   -- X velocity (speed of horizontal movement)
   , playerVelY :: Float   -- Y velocity (speed of vertical movement)
   , playerSize :: Float   -- Size of the player square
@@ -68,6 +68,11 @@ data Obstacle = Obstacle
   , obstacleHeight :: Float -- Height of the obstacle
   } deriving (Show)
 
+-- Important notes:
+  -- all Data have position functions
+  -- game state is a collection of Data "objects" and "metadata"
+  -- player velocity is based on user --> not an acceleration constant
+
 -- ============================================================================
 -- INITIAL STATE - Starting values when the game begins
 -- ============================================================================
@@ -83,6 +88,7 @@ initialPlayer = Player
   }
 
 -- Create the initial game state with 2 enemies and obstacles
+-- All states are defined
 initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
