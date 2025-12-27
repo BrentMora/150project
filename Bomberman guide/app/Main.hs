@@ -1,165 +1,280 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecursiveDo #-}
 
 module Main where
 
-import qualified Data.Map.Strict as Map
-import Data.Text (Text)
+-- Import Reflex DOM for reactive web programming
+import Reflex.Dom
+import qualified Data.Map as Map
+import Data.Text (pack)
 import qualified Data.Text as T
-import Miso
-import Miso.String (MisoString, ms)
+import Control.Monad (void)
+import Control.Monad.IO.Class (liftIO)
 
--- | Model
-data Model = Model
-  { playerX :: Double
-  , playerY :: Double
-  , keys :: KeyState
-  } deriving (Eq, Show)
+-- Import GHCJS DOM types for working with browser APIs
+import GHCJS.DOM.Types (JSM, liftJSM, castTo, CanvasRenderingContext2D, HTMLCanvasElement(..), toJSString)
+import qualified GHCJS.DOM.Types as DOM
+import GHCJS.DOM.HTMLCanvasElement (getContext)
+import GHCJS.DOM.CanvasRenderingContext2D
 
-data KeyState = KeyState
-  { upPressed :: Bool
-  , downPressed :: Bool
-  , leftPressed :: Bool
-  , rightPressed :: Bool
-  } deriving (Eq, Show)
+-- Import other GHCJS modules
+import GHCJS.DOM (currentDocumentUnchecked)
+import GHCJS.DOM.Document (getDocumentElement)
+import GHCJS.DOM.EventM (on, event)
+import GHCJS.DOM.GlobalEventHandlers (keyDown, keyUp)
+import GHCJS.DOM.KeyboardEvent (getKeyCode)
 
--- | Grid constants
-gridWidth :: Int
-gridWidth = 13
+-- Import time for game loop timing
+import Data.Time.Clock (getCurrentTime, diffUTCTime, UTCTime, NominalDiffTime)
+import Data.IORef
+import Control.Concurrent (threadDelay)
 
-gridHeight :: Int
-gridHeight = 15
+-- ============================================================================
+-- DATA TYPES - Define the structure of our game state
+-- ============================================================================
 
-cellSize :: Double
-cellSize = 40.0
+-- Player represents the blue square controlled by the user
+data Player = Player
+  { playerX :: Float      -- X position on canvas (0-800)
+  , playerY :: Float      -- Y position on canvas (0-600)
+  , playerVelX :: Float   -- X velocity (speed of horizontal movement)
+  , playerVelY :: Float   -- Y velocity (speed of vertical movement)
+  , playerSize :: Float   -- Size of the player square
+  } deriving (Show)
 
-playerSpeed :: Double
-playerSpeed = 0.1
+-- GameState holds all the data about the current game
+data GameState = GameState
+  { player :: Player      -- The player character
+  , enemies :: [Enemy]    -- List of enemy squares
+  , score :: Int          -- Current score
+  } deriving (Show)
 
--- | Action
-data Action
-  = NoOp
-  | KeyDown Int
-  | KeyUp Int
-  | AnimationFrame
-  deriving (Show, Eq)
+-- Enemy represents the red bouncing squares
+data Enemy = Enemy
+  { enemyX :: Float       -- X position
+  , enemyY :: Float       -- Y position
+  , enemyVelX :: Float    -- X velocity (horizontal speed)
+  , enemyVelY :: Float    -- Y velocity (vertical speed)
+  , enemySize :: Float    -- Size of the enemy square
+  } deriving (Show)
 
--- | Initial state
-initialModel :: Model
-initialModel = Model
-  { playerX = 6.5
-  , playerY = 7.5
-  , keys = KeyState False False False False
+-- ============================================================================
+-- INITIAL STATE - Starting values when the game begins
+-- ============================================================================
+
+-- Create the initial player in the center of the screen
+initialPlayer :: Player
+initialPlayer = Player
+  { playerX = 400      -- Center X (canvas is 800 wide)
+  , playerY = 300      -- Center Y (canvas is 600 tall)
+  , playerVelX = 0     -- Not moving initially
+  , playerVelY = 0     -- Not moving initially
+  , playerSize = 30    -- 30 pixels square
   }
 
--- | Update
-updateModel :: Action -> Model -> Effect Action Model
-updateModel NoOp m = noEff m
-updateModel (KeyDown code) m = noEff $ m { keys = updateKey code True (keys m) }
-updateModel (KeyUp code) m = noEff $ m { keys = updateKey code False (keys m) }
-updateModel AnimationFrame m = noEff $ movePlayer m
-
-updateKey :: Int -> Bool -> KeyState -> KeyState
-updateKey code pressed ks = case code of
-  37 -> ks { leftPressed = pressed }
-  38 -> ks { upPressed = pressed }
-  39 -> ks { rightPressed = pressed }
-  40 -> ks { downPressed = pressed }
-  65 -> ks { leftPressed = pressed }
-  87 -> ks { upPressed = pressed }
-  68 -> ks { rightPressed = pressed }
-  83 -> ks { downPressed = pressed }
-  _ -> ks
-
-movePlayer :: Model -> Model
-movePlayer m@Model{..} =
-  let dx = (if rightPressed keys then playerSpeed else 0) - (if leftPressed keys then playerSpeed else 0)
-      dy = (if downPressed keys then playerSpeed else 0) - (if upPressed keys then playerSpeed else 0)
-      newX = clamp 0.5 (fromIntegral gridWidth - 0.5) (playerX + dx)
-      newY = clamp 0.5 (fromIntegral gridHeight - 0.5) (playerY + dy)
-  in m { playerX = newX, playerY = newY }
-
-clamp :: Double -> Double -> Double -> Double
-clamp minVal maxVal val = max minVal (min maxVal val)
-
--- | View
-viewModel :: Model -> View Action
-viewModel m@Model{..} =
-  div_ []
-    [ div_ [ style_ $ Map.fromList [("text-align", "center"), ("padding", "20px")] ]
-        [ h1_ [] [ text "Grid Game" ]
-        , p_ [] [ text "Use arrow keys or WASD to move" ]
-        , canvas_
-            [ id_ "gameCanvas"
-            , width_ $ ms $ show (floor (cellSize * fromIntegral gridWidth) :: Int)
-            , height_ $ ms $ show (floor (cellSize * fromIntegral gridHeight) :: Int)
-            , style_ $ Map.fromList 
-                [ ("border", "2px solid #333")
-                , ("background", "#f0f0f0")
-                , ("display", "block")
-                , ("margin", "0 auto")
-                ]
-            ]
-            []
-        , script_ [] [ text $ renderScript m ]
-        ]
-    ]
-
--- | Generate JavaScript to render the game
-renderScript :: Model -> MisoString
-renderScript Model{..} = ms $ T.unpack $ T.unlines
-  [ "const canvas = document.getElementById('gameCanvas');"
-  , "const ctx = canvas.getContext('2d');"
-  , "ctx.clearRect(0, 0, canvas.width, canvas.height);"
-  , ""
-  , "// Draw grid"
-  , "ctx.strokeStyle = '#ccc';"
-  , "ctx.lineWidth = 1;"
-  , T.concat
-      [ "for (let x = 0; x < " <> T.pack (show gridWidth) <> "; x++) {"
-      , "  for (let y = 0; y < " <> T.pack (show gridHeight) <> "; y++) {"
-      , "    ctx.strokeRect(x * " <> T.pack (show cellSize) <> ", y * " <> T.pack (show cellSize) <> ", "
-      , T.pack (show cellSize) <> ", " <> T.pack (show cellSize) <> ");"
-      , "  }"
-      , "}"
+-- Create the initial game state with 2 enemies
+initialGameState :: GameState
+initialGameState = GameState
+  { player = initialPlayer
+  , enemies = 
+      [ Enemy 100 100 2 1.5      -- First enemy: top-left, moving right-down
+      , Enemy 600 400 (-1.5) (-2) -- Second enemy: bottom-right, moving left-up
       ]
-  , ""
-  , "// Draw player"
-  , "ctx.beginPath();"
-  , "ctx.arc("
-  , "  " <> T.pack (show (playerX * cellSize)) <> ","
-  , "  " <> T.pack (show (playerY * cellSize)) <> ","
-  , "  " <> T.pack (show (cellSize * 0.4)) <> ","
-  , "  0, 2 * Math.PI"
-  , ");"
-  , "ctx.fillStyle = '#4CAF50';"
-  , "ctx.fill();"
-  , "ctx.strokeStyle = '#2E7D32';"
-  , "ctx.lineWidth = 2;"
-  , "ctx.stroke();"
-  ]
+  , score = 0  -- Start with 0 points
+  }
 
--- | Main
+-- ============================================================================
+-- GAME LOGIC - Functions that update the game state
+-- ============================================================================
+
+-- Update player position based on which keys are pressed
+-- Takes a Map of currently pressed keys and the current player state
+-- Returns updated player state
+updatePlayer :: Map.Map Word () -> Player -> Player
+updatePlayer keys p = p
+  { playerX = clamp 0 800 (playerX p + playerVelX p)  -- Keep X within canvas bounds
+  , playerY = clamp 0 600 (playerY p + playerVelY p)  -- Keep Y within canvas bounds
+  , playerVelX = vx  -- Set new X velocity based on keys
+  , playerVelY = vy  -- Set new Y velocity based on keys
+  }
+  where
+    speed = 5  -- Movement speed in pixels per frame
+    
+    -- Calculate X velocity: left if Left/A pressed, right if Right/D pressed
+    vx = if Map.member 37 keys || Map.member 65 keys -- 37=Left Arrow, 65=A
+         then -speed
+         else if Map.member 39 keys || Map.member 68 keys -- 39=Right Arrow, 68=D
+              then speed
+              else 0
+              
+    -- Calculate Y velocity: up if Up/W pressed, down if Down/S pressed
+    vy = if Map.member 38 keys || Map.member 87 keys -- 38=Up Arrow, 87=W
+         then -speed
+         else if Map.member 40 keys || Map.member 83 keys -- 40=Down Arrow, 83=S
+              then speed
+              else 0
+
+-- Update a single enemy's position and handle wall bouncing
+updateEnemy :: Enemy -> Enemy
+updateEnemy e = e
+  { enemyX = newX      -- Update X position
+  , enemyY = newY      -- Update Y position
+  , enemyVelX = newVelX  -- Update X velocity (might flip on wall hit)
+  , enemyVelY = newVelY  -- Update Y velocity (might flip on wall hit)
+  }
+  where
+    -- Calculate new positions by adding velocity
+    newX = enemyX e + enemyVelX e
+    newY = enemyY e + enemyVelY e
+    
+    -- Reverse X velocity if enemy hits left or right wall
+    newVelX = if newX <= 0 || newX >= 800 then -(enemyVelX e) else enemyVelX e
+    
+    -- Reverse Y velocity if enemy hits top or bottom wall
+    newVelY = if newY <= 0 || newY >= 600 then -(enemyVelY e) else enemyVelY e
+
+-- Update the entire game state each frame
+updateGameState :: Map.Map Word () -> GameState -> GameState
+updateGameState keys gs = gs
+  { player = updatePlayer keys (player gs)  -- Update player based on input
+  , enemies = map updateEnemy (enemies gs)  -- Update all enemies
+  }
+
+-- Clamp a value between a minimum and maximum
+-- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
+clamp :: Ord a => a -> a -> a -> a
+clamp minV maxV = max minV . min maxV
+
+-- ============================================================================
+-- RENDERING - Functions that draw the game to the canvas
+-- ============================================================================
+
+-- Draw the entire game state to the canvas
+drawGame :: CanvasRenderingContext2D -> GameState -> JSM ()
+drawGame ctx gs = do
+  -- Clear the canvas with a dark background
+  setFillStyle ctx (toJSString ("rgb(20, 20, 30)" :: String))  -- Dark blue-gray
+  fillRect ctx 0 0 800 600  -- Fill entire 800x600 canvas
+  
+  -- Draw the player as a blue square
+  setFillStyle ctx (toJSString ("rgb(100, 200, 255)" :: String))  -- Light blue
+  let p = player gs
+  -- Draw square centered on player position
+  fillRect ctx (playerX p - playerSize p / 2)   -- Top-left X
+               (playerY p - playerSize p / 2)   -- Top-left Y
+               (playerSize p)                    -- Width
+               (playerSize p)                    -- Height
+  
+  -- Draw all enemies as red squares
+  setFillStyle ctx (toJSString ("rgb(255, 100, 100)" :: String))  -- Light red
+  -- Map over each enemy and draw it
+  mapM_ (\e -> fillRect ctx 
+                 (enemyX e - enemySize e / 2)    -- Top-left X
+                 (enemyY e - enemySize e / 2)    -- Top-left Y
+                 (enemySize e)                    -- Width
+                 (enemySize e))                   -- Height
+        (enemies gs)
+  
+  -- Draw the score text in the top-left corner
+  setFillStyle ctx (toJSString ("rgb(255, 255, 255)" :: String))  -- White
+  setFont ctx (toJSString ("20px Arial" :: String))  -- 20pt Arial font
+  fillText ctx (toJSString ("Score: " ++ show (score gs) :: String)) 
+               10           -- X position
+               30           -- Y position
+               (Nothing :: Maybe Float)  -- No maximum width
+
+-- ============================================================================
+-- MAIN APPLICATION - Set up the UI and game loop
+-- ============================================================================
+
 main :: IO ()
-main = startApp App
-  { initialAction = NoOp
-  , model = initialModel
-  , update = updateModel
-  , view = viewModel
-  , events = Map.fromList 
-      [ ("keydown", \e -> KeyDown (keyCode e))
-      , ("keyup", \e -> KeyUp (keyCode e))
-      ]
-  , subs = [ animationFrameSub ]
-  , mountPoint = Nothing
-  , logLevel = Off
-  }
+main = mainWidget $ do
+  el "div" $ do
+    -- Display title and instructions
+    el "h1" $ text "Haskell Canvas 2D Game Demo"
+    el "p" $ text "Use WASD or Arrow Keys to move the blue square. Avoid the red enemies!"
+    
+    -- Create the canvas element with attributes
+    (canvasEl, _) <- elAttr' "canvas" 
+      (Map.fromList 
+        [ ("width", "800")                              -- Canvas width
+        , ("height", "600")                             -- Canvas height
+        , ("style", "border: 2px solid #333; background: #000")  -- Styling
+        , ("tabindex", "0")                             -- Make it focusable for keyboard
+        ]) 
+      blank
+    
+    -- Get the raw DOM element from Reflex's element wrapper
+    let canvas = _element_raw canvasEl
+    
+    -- ========================================================================
+    -- KEYBOARD INPUT HANDLING
+    -- ========================================================================
+    
+    -- Listen for keyboard events on the canvas
+    let keyDownEvt = domEvent Keydown canvasEl  -- Fires when key is pressed
+    let keyUpEvt = domEvent Keyup canvasEl      -- Fires when key is released
+    
+    -- Convert keyboard events to key codes (Word numbers like 87 for 'W')
+    let keyDownCode = fmap (fromIntegral . fromEnum) keyDownEvt
+    let keyUpCode = fmap (fromIntegral . fromEnum) keyUpEvt
+    
+    -- Build a map tracking which keys are currently pressed
+    -- rec allows recursive definition (keyState depends on events that use keyState)
+    rec keyState <- foldDyn ($) Map.empty $ mergeWith (.)
+          [ fmap (\k -> Map.insert k ()) keyDownCode   -- Add key when pressed
+          , fmap Map.delete keyUpCode                   -- Remove key when released
+          ]
+    
+    -- ========================================================================
+    -- GAME LOOP TIMING
+    -- ========================================================================
+    
+    -- Get current time to start the ticker
+    now <- liftIO getCurrentTime
+    
+    -- Create a tick event that fires ~60 times per second (every 0.016 seconds)
+    tick <- tickLossy (0.016 :: NominalDiffTime) now
+    
+    -- ========================================================================
+    -- GAME STATE UPDATES
+    -- ========================================================================
+    
+    -- Update game state on every tick
+    -- foldDyn accumulates state: takes update function, initial state, and event
+    gameState <- foldDyn (\keys gs -> updateGameState keys gs) 
+                         initialGameState           -- Start with initial state
+                         (tagPromptlyDyn keyState tick)  -- Sample keyState on each tick
+    
+    -- ========================================================================
+    -- RENDERING
+    -- ========================================================================
+    
+    -- Render the game whenever the game state changes
+    performEvent_ $ ffor (updated gameState) $ \gs -> liftJSM $ do
+      -- Cast the raw DOM element to HTMLCanvasElement
+      mCanvasEl <- DOM.castTo DOM.HTMLCanvasElement canvas
+      case mCanvasEl of
+        Nothing -> return ()  -- If cast fails, do nothing
+        Just canvasEl -> do
+          -- Get the 2D rendering context from the canvas
+          mRenderingContext <- getContext canvasEl (toJSString ("2d" :: String)) ([] :: [T.Text])
+          case mRenderingContext of
+            Nothing -> return ()  -- If context not available, do nothing
+            Just renderingContext -> do
+              -- Cast the generic rendering context to 2D context
+              mCtx <- DOM.castTo DOM.CanvasRenderingContext2D renderingContext
+              case mCtx of
+                Nothing -> return ()  -- If cast fails, do nothing
+                Just ctx -> drawGame ctx gs  -- Finally, draw the game!
+    
+    return ()
 
--- | Animation frame subscription
-animationFrameSub :: Sub Action
-animationFrameSub sink = do
-  let loop = do
-        _ <- requestAnimationFrame (\_ -> sink AnimationFrame >> loop)
-        pure ()
-  loop
-  pure (pure ())
+  -- Display game features below the canvas
+  el "div" $ do
+    el "h3" $ text "Game Features:"
+    el "ul" $ do
+      el "li" $ text "Player movement with keyboard input (WASD/Arrows)"
+      el "li" $ text "Enemy entities with bouncing physics"
+      el "li" $ text "Canvas 2D rendering at 60 FPS"
+      el "li" $ text "Game state management with Reflex FRP"

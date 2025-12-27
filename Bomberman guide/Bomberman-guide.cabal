@@ -1,4 +1,4 @@
-cabal-version:      3.14
+cabal-version:      3.16
 name:               Bomberman-guide
 version:            0.1.0.0
 license:            NONE
@@ -15,10 +15,22 @@ executable Bomberman-guide
     main-is:          Main.hs
     
     build-depends:    
-        base ^>=4.19.1.0,
-        miso >= 1.8.0.0,
-        containers >= 0.6,
-        text >= 1.2
+        base >=4.14 && <5,
+        reflex >=0.8,
+        reflex-dom >=0.6,
+        ghcjs-dom >=0.9,
+        containers >=0.6,
+        text >=1.2,
+        time >=1.9,
+        mtl >=2.2
     
     hs-source-dirs:   app
     default-language: Haskell2010
+
+    if impl(ghcjs)
+        build-depends: ghcjs-base
+        
+    ghc-options: -Wall
+
+    
+
