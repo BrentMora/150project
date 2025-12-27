@@ -46,6 +46,7 @@ data Player = Player
 data GameState = GameState
   { player :: Player      -- The player character
   , enemies :: [Enemy]    -- List of enemy squares
+  , obstacles :: [Obstacle] -- List of solid obstacle blocks
   , score :: Int          -- Current score
   , gameOver :: Bool      -- Whether the game has ended
   } deriving (Show)
@@ -57,6 +58,14 @@ data Enemy = Enemy
   , enemyVelX :: Float    -- X velocity (horizontal speed)
   , enemyVelY :: Float    -- Y velocity (vertical speed)
   , enemySize :: Float    -- Size of the enemy square
+  } deriving (Show)
+
+-- Obstacle represents solid blocks that block movement
+data Obstacle = Obstacle
+  { obstacleX :: Float      -- X position (center)
+  , obstacleY :: Float      -- Y position (center)
+  , obstacleWidth :: Float  -- Width of the obstacle
+  , obstacleHeight :: Float -- Height of the obstacle
   } deriving (Show)
 
 -- ============================================================================
@@ -73,13 +82,21 @@ initialPlayer = Player
   , playerSize = 30    -- 30 pixels square
   }
 
--- Create the initial game state with 2 enemies
+-- Create the initial game state with 2 enemies and obstacles
 initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , enemies = 
       [ Enemy 100 100 2 1.5 25        -- First enemy: top-left, moving right-down, size 25
       , Enemy 600 400 (-1.5) (-2) 25  -- Second enemy: bottom-right, moving left-up, size 25
+      ]
+  , obstacles =
+      [ Obstacle 200 300 80 80        -- Center-left block
+      , Obstacle 600 300 80 80        -- Center-right block
+      , Obstacle 400 150 120 60       -- Top-center horizontal block
+      , Obstacle 400 450 120 60       -- Bottom-center horizontal block
+      , Obstacle 350 300 60 120       -- Center vertical block (left of middle)
+      , Obstacle 450 300 60 120       -- Center vertical block (right of middle)
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
@@ -89,16 +106,50 @@ initialGameState = GameState
 -- GAME LOGIC - Functions that update the game state
 -- ============================================================================
 
+-- Check if player collides with an obstacle (for blocking movement)
+checkPlayerObstacleCollision :: Player -> Obstacle -> Bool
+checkPlayerObstacleCollision p obs =
+  let px = playerX p
+      py = playerY p
+      ps = playerSize p
+      ox = obstacleX obs
+      oy = obstacleY obs
+      ow = obstacleWidth obs
+      oh = obstacleHeight obs
+      
+      -- Calculate edges of each rectangle
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      oLeft = ox - ow / 2
+      oRight = ox + ow / 2
+      oTop = oy - oh / 2
+      oBottom = oy + oh / 2
+      
+  in -- Rectangles collide if they overlap on both axes
+     pRight > oLeft && pLeft < oRight &&
+     pBottom > oTop && pTop < oBottom
+
 -- Update player position based on which keys are pressed
 -- Takes a Map of currently pressed keys and the current player state
 -- Returns updated player state
-updatePlayer :: Map.Map Word () -> Player -> Player
-updatePlayer keys p = p
-  { playerX = clamp 0 800 (playerX p + playerVelX p)  -- Keep X within canvas bounds
-  , playerY = clamp 0 600 (playerY p + playerVelY p)  -- Keep Y within canvas bounds
-  , playerVelX = vx  -- Set new X velocity based on keys
-  , playerVelY = vy  -- Set new Y velocity based on keys
-  }
+updatePlayer :: Map.Map Word () -> [Obstacle] -> Player -> Player
+updatePlayer keys obstacles p = 
+  let -- Calculate desired new position
+      newX = playerX p + vx
+      newY = playerY p + vy
+      
+      -- Create a test player at the new position
+      testPlayer = p { playerX = clamp 0 800 newX, playerY = clamp 0 600 newY }
+      
+      -- Check if new position would collide with any obstacle
+      wouldCollide = any (checkPlayerObstacleCollision testPlayer) obstacles
+      
+  in if wouldCollide
+     then p  -- Don't move if it would hit an obstacle
+     else testPlayer  -- Move to new position if clear
   where
     speed = 5  -- Movement speed in pixels per frame
     
@@ -116,24 +167,66 @@ updatePlayer keys p = p
               then speed
               else 0
 
--- Update a single enemy's position and handle wall bouncing
-updateEnemy :: Enemy -> Enemy
-updateEnemy e = e
-  { enemyX = newX      -- Update X position
-  , enemyY = newY      -- Update Y position
-  , enemyVelX = newVelX  -- Update X velocity (might flip on wall hit)
-  , enemyVelY = newVelY  -- Update Y velocity (might flip on wall hit)
-  }
-  where
-    -- Calculate new positions by adding velocity
-    newX = enemyX e + enemyVelX e
-    newY = enemyY e + enemyVelY e
-    
-    -- Reverse X velocity if enemy hits left or right wall
-    newVelX = if newX <= 0 || newX >= 800 then -(enemyVelX e) else enemyVelX e
-    
-    -- Reverse Y velocity if enemy hits top or bottom wall
-    newVelY = if newY <= 0 || newY >= 600 then -(enemyVelY e) else enemyVelY e
+-- Check if enemy collides with an obstacle (for bouncing)
+checkEnemyObstacleCollision :: Enemy -> Obstacle -> Bool
+checkEnemyObstacleCollision e obs =
+  let ex = enemyX e
+      ey = enemyY e
+      es = enemySize e
+      ox = obstacleX obs
+      oy = obstacleY obs
+      ow = obstacleWidth obs
+      oh = obstacleHeight obs
+      
+      eLeft = ex - es / 2
+      eRight = ex + es / 2
+      eTop = ey - es / 2
+      eBottom = ey + es / 2
+      
+      oLeft = ox - ow / 2
+      oRight = ox + ow / 2
+      oTop = oy - oh / 2
+      oBottom = oy + oh / 2
+      
+  in eRight > oLeft && eLeft < oRight &&
+     eBottom > oTop && eTop < oBottom
+
+-- Update a single enemy's position and handle wall and obstacle bouncing
+updateEnemy :: [Obstacle] -> Enemy -> Enemy
+updateEnemy obstacles e = 
+  let -- Calculate new position
+      newX = enemyX e + enemyVelX e
+      newY = enemyY e + enemyVelY e
+      
+      -- Check wall collisions
+      hitLeftWall = newX <= 0
+      hitRightWall = newX >= 800
+      hitTopWall = newY <= 0
+      hitBottomWall = newY >= 600
+      
+      -- Create test enemy at new position
+      testEnemy = e { enemyX = newX, enemyY = newY }
+      
+      -- Check if new position would collide with obstacles
+      hitObstacle = any (checkEnemyObstacleCollision testEnemy) obstacles
+      
+      -- Reverse velocity if hitting wall or obstacle
+      finalVelX = if hitLeftWall || hitRightWall || hitObstacle 
+                  then -(enemyVelX e) 
+                  else enemyVelX e
+      finalVelY = if hitTopWall || hitBottomWall || hitObstacle 
+                  then -(enemyVelY e) 
+                  else enemyVelY e
+      
+      -- Clamp position to stay in bounds
+      finalX = clamp 0 800 newX
+      finalY = clamp 0 600 newY
+      
+  in e { enemyX = finalX
+       , enemyY = finalY
+       , enemyVelX = finalVelX
+       , enemyVelY = finalVelY
+       }
 
 -- Check if two rectangles (player and enemy) are colliding
 -- Uses AABB (Axis-Aligned Bounding Box) collision detection
@@ -169,8 +262,8 @@ updateGameState keys gs =
   if gameOver gs 
   then gs
   else
-    let updatedPlayer = updatePlayer keys (player gs)  -- Update player based on input
-        updatedEnemies = map updateEnemy (enemies gs)  -- Update all enemies
+    let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player, checking obstacles
+        updatedEnemies = map (updateEnemy (obstacles gs)) (enemies gs)  -- Update all enemies, bouncing off obstacles
         
         -- Check if player collides with any enemy
         collision = any (checkCollision updatedPlayer) updatedEnemies
@@ -200,6 +293,15 @@ drawGame ctx gs = do
   -- Clear the canvas with a dark background
   setFillStyle ctx (toJSString ("rgb(20, 20, 30)" :: String))  -- Dark blue-gray
   fillRect ctx 0 0 800 600  -- Fill entire 800x600 canvas
+  
+  -- Draw all obstacles as gray blocks
+  setFillStyle ctx (toJSString ("rgb(80, 80, 90)" :: String))  -- Dark gray
+  mapM_ (\obs -> fillRect ctx
+                   (obstacleX obs - obstacleWidth obs / 2)   -- Top-left X
+                   (obstacleY obs - obstacleHeight obs / 2)  -- Top-left Y
+                   (obstacleWidth obs)                        -- Width
+                   (obstacleHeight obs))                      -- Height
+        (obstacles gs)
   
   -- Draw the player as a blue square (or gray if game over)
   if gameOver gs
