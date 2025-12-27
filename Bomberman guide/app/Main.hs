@@ -47,6 +47,7 @@ data GameState = GameState
   { player :: Player      -- The player character
   , enemies :: [Enemy]    -- List of enemy squares
   , score :: Int          -- Current score
+  , gameOver :: Bool      -- Whether the game has ended
   } deriving (Show)
 
 -- Enemy represents the red bouncing squares
@@ -80,7 +81,8 @@ initialGameState = GameState
       [ Enemy 100 100 2 1.5 25        -- First enemy: top-left, moving right-down, size 25
       , Enemy 600 400 (-1.5) (-2) 25  -- Second enemy: bottom-right, moving left-up, size 25
       ]
-  , score = 0  -- Start with 0 points
+  , score = 0       -- Start with 0 points
+  , gameOver = False -- Game starts running
   }
 
 -- ============================================================================
@@ -133,12 +135,55 @@ updateEnemy e = e
     -- Reverse Y velocity if enemy hits top or bottom wall
     newVelY = if newY <= 0 || newY >= 600 then -(enemyVelY e) else enemyVelY e
 
+-- Check if two rectangles (player and enemy) are colliding
+-- Uses AABB (Axis-Aligned Bounding Box) collision detection
+checkCollision :: Player -> Enemy -> Bool
+checkCollision p e = 
+  -- Check if rectangles overlap on both X and Y axes
+  let px = playerX p
+      py = playerY p
+      ps = playerSize p
+      ex = enemyX e
+      ey = enemyY e
+      es = enemySize e
+      
+      -- Calculate edges of each rectangle
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      eLeft = ex - es / 2
+      eRight = ex + es / 2
+      eTop = ey - es / 2
+      eBottom = ey + es / 2
+      
+  in -- Rectangles collide if they overlap on both axes
+     pRight > eLeft && pLeft < eRight &&  -- X axis overlap
+     pBottom > eTop && pTop < eBottom     -- Y axis overlap
+
 -- Update the entire game state each frame
 updateGameState :: Map.Map Word () -> GameState -> GameState
-updateGameState keys gs = gs
-  { player = updatePlayer keys (player gs)  -- Update player based on input
-  , enemies = map updateEnemy (enemies gs)  -- Update all enemies
-  }
+updateGameState keys gs = 
+  -- Don't update if game is over
+  if gameOver gs 
+  then gs
+  else
+    let updatedPlayer = updatePlayer keys (player gs)  -- Update player based on input
+        updatedEnemies = map updateEnemy (enemies gs)  -- Update all enemies
+        
+        -- Check if player collides with any enemy
+        collision = any (checkCollision updatedPlayer) updatedEnemies
+        
+        -- Increment score each frame if still alive
+        newScore = if collision then score gs else score gs + 1
+        
+    in gs
+      { player = updatedPlayer
+      , enemies = updatedEnemies
+      , score = newScore
+      , gameOver = collision  -- Game ends on collision
+      }
 
 -- Clamp a value between a minimum and maximum
 -- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
@@ -156,8 +201,10 @@ drawGame ctx gs = do
   setFillStyle ctx (toJSString ("rgb(20, 20, 30)" :: String))  -- Dark blue-gray
   fillRect ctx 0 0 800 600  -- Fill entire 800x600 canvas
   
-  -- Draw the player as a blue square
-  setFillStyle ctx (toJSString ("rgb(100, 200, 255)" :: String))  -- Light blue
+  -- Draw the player as a blue square (or gray if game over)
+  if gameOver gs
+    then setFillStyle ctx (toJSString ("rgb(100, 100, 100)" :: String))  -- Gray if dead
+    else setFillStyle ctx (toJSString ("rgb(100, 200, 255)" :: String))  -- Light blue if alive
   let p = player gs
   -- Draw square centered on player position
   fillRect ctx (playerX p - playerSize p / 2)   -- Top-left X
@@ -182,6 +229,22 @@ drawGame ctx gs = do
                10           -- X position
                30           -- Y position
                (Nothing :: Maybe Float)  -- No maximum width
+  
+  -- Draw GAME OVER message if player hit an enemy
+  if gameOver gs
+    then do
+      setFillStyle ctx (toJSString ("rgb(255, 50, 50)" :: String))  -- Bright red
+      setFont ctx (toJSString ("48px Arial" :: String))  -- Large font
+      fillText ctx (toJSString ("GAME OVER!" :: String))
+                   250        -- Centered X
+                   300        -- Centered Y
+                   (Nothing :: Maybe Float)
+      setFont ctx (toJSString ("24px Arial" :: String))  -- Smaller font
+      fillText ctx (toJSString ("Refresh to restart" :: String))
+                   280
+                   350
+                   (Nothing :: Maybe Float)
+    else return ()
 
 -- ============================================================================
 -- MAIN APPLICATION - Set up the UI and game loop
