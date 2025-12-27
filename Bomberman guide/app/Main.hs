@@ -77,8 +77,8 @@ initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , enemies = 
-      [ Enemy 100 100 2 1.5      -- First enemy: top-left, moving right-down
-      , Enemy 600 400 (-1.5) (-2) -- Second enemy: bottom-right, moving left-up
+      [ Enemy 100 100 2 1.5 25        -- First enemy: top-left, moving right-down, size 25
+      , Enemy 600 400 (-1.5) (-2) 25  -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , score = 0  -- Start with 0 points
   }
