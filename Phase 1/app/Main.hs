@@ -88,7 +88,7 @@ initialPlayer = Player
   }
 
 -- Create the initial game state with 2 enemies and obstacles
--- All states are defined
+-- All objects are defined explicitly (especially positions)
 initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
