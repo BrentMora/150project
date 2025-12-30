@@ -133,7 +133,9 @@ checkPlayerObstacleCollision p obs =
       oRight = ox + ow / 2
       oTop = oy - oh / 2
       oBottom = oy + oh / 2
-      
+
+      -- /2 because you add half of the object size to the position (center)
+
   in -- Rectangles collide if they overlap on both axes
      pRight > oLeft && pLeft < oRight &&
      pBottom > oTop && pTop < oBottom
@@ -173,7 +175,7 @@ updatePlayer keys obstacles p =
               then speed
               else 0
 
--- Check if enemy collides with an obstacle (for bouncing)
+-- Check if enemy collides with an obstacle (for bouncing) -- OBSOLETE
 checkEnemyObstacleCollision :: Enemy -> Obstacle -> Bool
 checkEnemyObstacleCollision e obs =
   let ex = enemyX e
@@ -198,7 +200,7 @@ checkEnemyObstacleCollision e obs =
      eBottom > oTop && eTop < oBottom
 
 -- Update a single enemy's position and handle wall and obstacle bouncing
-updateEnemy :: [Obstacle] -> Enemy -> Enemy
+updateEnemy :: [Obstacle] -> Enemy -> Enemy -- OBSOLETE??
 updateEnemy obstacles e = 
   let -- Calculate new position
       newX = enemyX e + enemyVelX e
@@ -320,7 +322,7 @@ drawGame ctx gs = do
                (playerSize p)                    -- Width
                (playerSize p)                    -- Height
   
-  -- Draw all enemies as red squares
+  -- Draw all enemies as red squares -- REFACTOR
   setFillStyle ctx (toJSString ("rgb(255, 100, 100)" :: String))  -- Light red
   -- Map over each enemy and draw it
   mapM_ (\e -> fillRect ctx 
@@ -404,7 +406,7 @@ main = mainWidget $ do
     -- Get current time to start the ticker
     now <- liftIO getCurrentTime
     
-    -- Create a tick event that fires ~60 times per second (every 0.016 seconds)
+    -- Create a tick event that fires ~60 times per second (every 0.016 seconds) -- REFACTOR to 1 second? but might affect movement? separate timer loop?
     tick <- tickLossy (0.016 :: NominalDiffTime) now
     
     -- ========================================================================
