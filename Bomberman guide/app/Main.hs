@@ -39,6 +39,9 @@ canvasWidth = 750
 canvasLength :: Float
 canvasLength = 650
 
+cellSize :: Float
+cellSize = 50
+
 -- ============================================================================
 -- DATA TYPES - Define the structure of our game state
 -- ============================================================================
@@ -85,8 +88,8 @@ data Obstacle = Obstacle
 -- Create the initial player in the center of the screen
 initialPlayer :: Player
 initialPlayer = Player
-  { playerX = 350      -- Center X
-  , playerY = canvasLength - 50      -- Center Y
+  { playerX = 375      -- Center X
+  , playerY = canvasLength - 110      -- Center Y
   , playerVelX = 0     -- Not moving initially
   , playerVelY = 0     -- Not moving initially
   , playerSize = 30    -- 30 pixels square
@@ -101,12 +104,58 @@ initialGameState = GameState
       , Enemy 600 400 (-1.5) (-2) 25  -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
-      [ Obstacle 200 300 80 80        -- Center-left block
-      , Obstacle 600 300 80 80        -- Center-right block
-      , Obstacle 400 150 120 60       -- Top-center horizontal block
-      , Obstacle 400 450 120 60       -- Bottom-center horizontal block
-      , Obstacle 350 300 60 120       -- Center vertical block (left of middle)
-      , Obstacle 450 300 60 120       -- Center vertical block (right of middle)
+      [ Obstacle 25 25 cellSize cellSize -- Top Border hard blocks...
+      , Obstacle 75 25 cellSize cellSize 
+      , Obstacle 125 25 cellSize cellSize
+      , Obstacle 175 25 cellSize cellSize
+      , Obstacle 225 25 cellSize cellSize
+      , Obstacle 275 25 cellSize cellSize
+      , Obstacle 325 25 cellSize cellSize
+      , Obstacle 375 25 cellSize cellSize
+      , Obstacle 425 25 cellSize cellSize
+      , Obstacle 475 25 cellSize cellSize
+      , Obstacle 525 25 cellSize cellSize
+      , Obstacle 575 25 cellSize cellSize
+      , Obstacle 625 25 cellSize cellSize
+      , Obstacle 675 25 cellSize cellSize
+      , Obstacle 725 25 cellSize cellSize
+      , Obstacle 25 75 cellSize cellSize -- Left Border Hard blocks ...
+      , Obstacle 25 125 cellSize cellSize
+      , Obstacle 25 175 cellSize cellSize
+      , Obstacle 25 225 cellSize cellSize
+      , Obstacle 25 275 cellSize cellSize
+      , Obstacle 25 325 cellSize cellSize
+      , Obstacle 25 375 cellSize cellSize
+      , Obstacle 25 425 cellSize cellSize
+      , Obstacle 25 475 cellSize cellSize
+      , Obstacle 25 525 cellSize cellSize
+      , Obstacle 25 575 cellSize cellSize
+      , Obstacle 25 625 cellSize cellSize
+      , Obstacle 725 75 cellSize cellSize -- Right Border Hard Blocks 
+      , Obstacle 725 125 cellSize cellSize
+      , Obstacle 725 175 cellSize cellSize
+      , Obstacle 725 225 cellSize cellSize
+      , Obstacle 725 275 cellSize cellSize
+      , Obstacle 725 325 cellSize cellSize
+      , Obstacle 725 375 cellSize cellSize
+      , Obstacle 725 425 cellSize cellSize
+      , Obstacle 725 475 cellSize cellSize
+      , Obstacle 725 525 cellSize cellSize
+      , Obstacle 725 575 cellSize cellSize
+      , Obstacle 725 625 cellSize cellSize
+      , Obstacle 75 625 cellSize cellSize -- Bottom Border Blocks
+      , Obstacle 125 625 cellSize cellSize
+      , Obstacle 175 625 cellSize cellSize
+      , Obstacle 225 625 cellSize cellSize
+      , Obstacle 275 625 cellSize cellSize
+      , Obstacle 325 625 cellSize cellSize
+      , Obstacle 375 625 cellSize cellSize
+      , Obstacle 425 625 cellSize cellSize
+      , Obstacle 475 625 cellSize cellSize
+      , Obstacle 525 625 cellSize cellSize
+      , Obstacle 575 625 cellSize cellSize
+      , Obstacle 625 625 cellSize cellSize
+      , Obstacle 675 625 cellSize cellSize
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
