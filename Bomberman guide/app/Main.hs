@@ -156,6 +156,36 @@ initialGameState = GameState
       , Obstacle 575 625 cellSize cellSize
       , Obstacle 625 625 cellSize cellSize
       , Obstacle 675 625 cellSize cellSize
+      , Obstacle 125 125 cellSize cellSize -- First row blocks => 125 Y height
+      , Obstacle 225 125 cellSize cellSize
+      , Obstacle 325 125 cellSize cellSize
+      , Obstacle 425 125 cellSize cellSize
+      , Obstacle 525 125 cellSize cellSize
+      , Obstacle 625 125 cellSize cellSize
+      , Obstacle 125 225 cellSize cellSize -- Second row blocks => 225 Y height
+      , Obstacle 225 225 cellSize cellSize
+      , Obstacle 325 225 cellSize cellSize
+      , Obstacle 425 225 cellSize cellSize
+      , Obstacle 525 225 cellSize cellSize
+      , Obstacle 625 225 cellSize cellSize
+      , Obstacle 125 325 cellSize cellSize -- Third row blocks => 325 Y height
+      , Obstacle 225 325 cellSize cellSize
+      , Obstacle 325 325 cellSize cellSize
+      , Obstacle 425 325 cellSize cellSize
+      , Obstacle 525 325 cellSize cellSize
+      , Obstacle 625 325 cellSize cellSize
+      , Obstacle 125 425 cellSize cellSize -- Fourth row blocks => 425 Y height
+      , Obstacle 225 425 cellSize cellSize
+      , Obstacle 325 425 cellSize cellSize
+      , Obstacle 425 425 cellSize cellSize
+      , Obstacle 525 425 cellSize cellSize
+      , Obstacle 625 425 cellSize cellSize
+      , Obstacle 125 525 cellSize cellSize -- Fifth row blocks => 525 Y height
+      , Obstacle 225 525 cellSize cellSize
+      , Obstacle 325 525 cellSize cellSize
+      , Obstacle 425 525 cellSize cellSize
+      , Obstacle 525 525 cellSize cellSize
+      , Obstacle 625 525 cellSize cellSize
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
