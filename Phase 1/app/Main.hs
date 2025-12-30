@@ -80,8 +80,8 @@ data Obstacle = Obstacle
 -- Create the initial player in the center of the screen
 initialPlayer :: Player
 initialPlayer = Player
-  { playerX = 400      -- Center X (canvas is 800 wide)
-  , playerY = 300      -- Center Y (canvas is 600 tall)
+  { playerX = 100      -- Center X (canvas is 800 wide)
+  , playerY = 100      -- Center Y (canvas is 600 tall)
   , playerVelX = 0     -- Not moving initially
   , playerVelY = 0     -- Not moving initially
   , playerSize = 30    -- 30 pixels square
@@ -150,7 +150,7 @@ updatePlayer keys obstacles p =
       newY = playerY p + vy
       
       -- Create a test player at the new position
-      testPlayer = p { playerX = clamp 0 800 newX, playerY = clamp 0 600 newY }
+      testPlayer = p { playerX = clamp 0 1500 newX, playerY = clamp 0 1300 newY } -- 800x600 >> 1500x1300
       
       -- Check if new position would collide with any obstacle
       wouldCollide = any (checkPlayerObstacleCollision testPlayer) obstacles
@@ -208,9 +208,9 @@ updateEnemy obstacles e =
       
       -- Check wall collisions
       hitLeftWall = newX <= 0
-      hitRightWall = newX >= 800
+      hitRightWall = newX >= 1500 -- 800 >> 1500
       hitTopWall = newY <= 0
-      hitBottomWall = newY >= 600
+      hitBottomWall = newY >= 1300 -- 800 >> 1300
       
       -- Create test enemy at new position
       testEnemy = e { enemyX = newX, enemyY = newY }
@@ -227,8 +227,8 @@ updateEnemy obstacles e =
                   else enemyVelY e
       
       -- Clamp position to stay in bounds
-      finalX = clamp 0 800 newX
-      finalY = clamp 0 600 newY
+      finalX = clamp 0 1500 newX -- 800 >> 1500
+      finalY = clamp 0 1300 newY -- 600 >> 1300
       
   in e { enemyX = finalX
        , enemyY = finalY
@@ -300,7 +300,7 @@ drawGame :: CanvasRenderingContext2D -> GameState -> JSM ()
 drawGame ctx gs = do
   -- Clear the canvas with a dark background
   setFillStyle ctx (toJSString ("rgb(20, 20, 30)" :: String))  -- Dark blue-gray
-  fillRect ctx 0 0 800 600  -- Fill entire 800x600 canvas
+  fillRect ctx 0 0 1500 1300  -- Fill entire 800x600 canvas -- >> 1500x1300
   
   -- Draw all obstacles as gray blocks
   setFillStyle ctx (toJSString ("rgb(80, 80, 90)" :: String))  -- Dark gray
@@ -370,8 +370,8 @@ main = mainWidget $ do
     -- Create the canvas element with attributes
     (canvasEl, _) <- elAttr' "canvas" 
       (Map.fromList 
-        [ ("width", "800")                              -- Canvas width
-        , ("height", "600")                             -- Canvas height
+        [ ("width", "1500")                              -- Canvas width -- 800 >> 1500
+        , ("height", "1300")                             -- Canvas height -- 600 >> 1300
         , ("style", "border: 2px solid #333; background: #000")  -- Styling
         , ("tabindex", "0")                             -- Make it focusable for keyboard
         ]) 
