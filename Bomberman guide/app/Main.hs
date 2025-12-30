@@ -42,11 +42,6 @@ canvasLength = 650
 cellSize :: Float
 cellSize = 50
 
-data ObstacleType = 
-  HardBlock
-  | SoftBlock
-  deriving (Show)
-
 -- ============================================================================
 -- DATA TYPES - Define the structure of our game state
 -- ============================================================================
@@ -85,7 +80,7 @@ data Obstacle = Obstacle
   , obstacleY :: Float      -- Y position (center)
   , obstacleWidth :: Float  -- Width of the obstacle
   , obstacleHeight :: Float -- Height of the obstacle
-  , obstacleType :: ObstacleType -- Type of the obstacle
+  , isHardBlock :: Bool -- Type of the obstacle (Boolean bc there's only two)
   } deriving (Show)
 
 -- ============================================================================
@@ -111,88 +106,88 @@ initialGameState = GameState
       , Enemy 600 400 (-1.5) (-2) 25  -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
-      [ Obstacle 25 25 cellSize cellSize  HardBlock -- Top Border hard blocks...
-      , Obstacle 75 25 cellSize cellSize  HardBlock  
-      , Obstacle 125 25 cellSize cellSize  HardBlock 
-      , Obstacle 175 25 cellSize cellSize  HardBlock 
-      , Obstacle 225 25 cellSize cellSize  HardBlock 
-      , Obstacle 275 25 cellSize cellSize  HardBlock 
-      , Obstacle 325 25 cellSize cellSize  HardBlock 
-      , Obstacle 375 25 cellSize cellSize  HardBlock 
-      , Obstacle 425 25 cellSize cellSize  HardBlock 
-      , Obstacle 475 25 cellSize cellSize  HardBlock 
-      , Obstacle 525 25 cellSize cellSize  HardBlock 
-      , Obstacle 575 25 cellSize cellSize  HardBlock 
-      , Obstacle 625 25 cellSize cellSize  HardBlock 
-      , Obstacle 675 25 cellSize cellSize  HardBlock 
-      , Obstacle 725 25 cellSize cellSize  HardBlock 
-      , Obstacle 25 75 cellSize cellSize  HardBlock -- Left Border Hard blocks ...
-      , Obstacle 25 125 cellSize cellSize  HardBlock 
-      , Obstacle 25 175 cellSize cellSize  HardBlock 
-      , Obstacle 25 225 cellSize cellSize  HardBlock 
-      , Obstacle 25 275 cellSize cellSize  HardBlock 
-      , Obstacle 25 325 cellSize cellSize  HardBlock 
-      , Obstacle 25 375 cellSize cellSize  HardBlock 
-      , Obstacle 25 425 cellSize cellSize  HardBlock 
-      , Obstacle 25 475 cellSize cellSize  HardBlock 
-      , Obstacle 25 525 cellSize cellSize  HardBlock 
-      , Obstacle 25 575 cellSize cellSize  HardBlock 
-      , Obstacle 25 625 cellSize cellSize  HardBlock 
-      , Obstacle 725 75 cellSize cellSize   HardBlock -- Right Border Hard Blocks 
-      , Obstacle 725 125 cellSize cellSize  HardBlock 
-      , Obstacle 725 175 cellSize cellSize  HardBlock 
-      , Obstacle 725 225 cellSize cellSize  HardBlock 
-      , Obstacle 725 275 cellSize cellSize  HardBlock 
-      , Obstacle 725 325 cellSize cellSize  HardBlock 
-      , Obstacle 725 375 cellSize cellSize  HardBlock 
-      , Obstacle 725 425 cellSize cellSize  HardBlock 
-      , Obstacle 725 475 cellSize cellSize  HardBlock 
-      , Obstacle 725 525 cellSize cellSize  HardBlock 
-      , Obstacle 725 575 cellSize cellSize  HardBlock 
-      , Obstacle 725 625 cellSize cellSize  HardBlock 
-      , Obstacle 75 625 cellSize cellSize   HardBlock  -- Bottom Border Blocks
-      , Obstacle 125 625 cellSize cellSize  HardBlock 
-      , Obstacle 175 625 cellSize cellSize  HardBlock 
-      , Obstacle 225 625 cellSize cellSize  HardBlock 
-      , Obstacle 275 625 cellSize cellSize  HardBlock 
-      , Obstacle 325 625 cellSize cellSize  HardBlock 
-      , Obstacle 375 625 cellSize cellSize  HardBlock 
-      , Obstacle 425 625 cellSize cellSize  HardBlock 
-      , Obstacle 475 625 cellSize cellSize  HardBlock 
-      , Obstacle 525 625 cellSize cellSize  HardBlock 
-      , Obstacle 575 625 cellSize cellSize  HardBlock 
-      , Obstacle 625 625 cellSize cellSize  HardBlock 
-      , Obstacle 675 625 cellSize cellSize  HardBlock 
-      , Obstacle 125 125 cellSize cellSize SoftBlock -- First row blocks => 125 Y height (index 52) (made it soft blocks first so easily distinguishable)
-      , Obstacle 225 125 cellSize cellSize SoftBlock 
-      , Obstacle 325 125 cellSize cellSize SoftBlock 
-      , Obstacle 425 125 cellSize cellSize SoftBlock 
-      , Obstacle 525 125 cellSize cellSize SoftBlock 
-      , Obstacle 625 125 cellSize cellSize SoftBlock 
-      , Obstacle 125 225 cellSize cellSize SoftBlock -- Second row blocks => 225 Y height
-      , Obstacle 225 225 cellSize cellSize SoftBlock 
-      , Obstacle 325 225 cellSize cellSize SoftBlock 
-      , Obstacle 425 225 cellSize cellSize SoftBlock 
-      , Obstacle 525 225 cellSize cellSize SoftBlock 
-      , Obstacle 625 225 cellSize cellSize SoftBlock 
-      , Obstacle 125 325 cellSize cellSize SoftBlock -- Third row blocks => 325 Y height
-      , Obstacle 225 325 cellSize cellSize SoftBlock 
-      , Obstacle 325 325 cellSize cellSize SoftBlock 
-      , Obstacle 425 325 cellSize cellSize SoftBlock 
-      , Obstacle 525 325 cellSize cellSize SoftBlock 
-      , Obstacle 625 325 cellSize cellSize SoftBlock 
-      , Obstacle 125 425 cellSize cellSize SoftBlock -- Fourth row blocks => 425 Y height
-      , Obstacle 225 425 cellSize cellSize SoftBlock 
-      , Obstacle 325 425 cellSize cellSize SoftBlock 
-      , Obstacle 425 425 cellSize cellSize SoftBlock 
-      , Obstacle 525 425 cellSize cellSize SoftBlock 
-      , Obstacle 625 425 cellSize cellSize SoftBlock 
-      , Obstacle 125 525 cellSize cellSize SoftBlock  -- Fifth row blocks => 525 Y height
-      , Obstacle 225 525 cellSize cellSize SoftBlock 
-      , Obstacle 325 525 cellSize cellSize SoftBlock 
-      , Obstacle 425 525 cellSize cellSize SoftBlock 
-      , Obstacle 525 525 cellSize cellSize SoftBlock 
-      , Obstacle 625 525 cellSize cellSize SoftBlock  -- (29 indexes possible to be soft blocks)
+      [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
+      , Obstacle 75 25 cellSize cellSize  True  
+      , Obstacle 125 25 cellSize cellSize  True 
+      , Obstacle 175 25 cellSize cellSize  True 
+      , Obstacle 225 25 cellSize cellSize  True 
+      , Obstacle 275 25 cellSize cellSize  True 
+      , Obstacle 325 25 cellSize cellSize  True 
+      , Obstacle 375 25 cellSize cellSize  True 
+      , Obstacle 425 25 cellSize cellSize  True 
+      , Obstacle 475 25 cellSize cellSize  True 
+      , Obstacle 525 25 cellSize cellSize  True 
+      , Obstacle 575 25 cellSize cellSize  True 
+      , Obstacle 625 25 cellSize cellSize  True 
+      , Obstacle 675 25 cellSize cellSize  True 
+      , Obstacle 725 25 cellSize cellSize  True 
+      , Obstacle 25 75 cellSize cellSize  True -- Left Border Hard blocks ...
+      , Obstacle 25 125 cellSize cellSize  True 
+      , Obstacle 25 175 cellSize cellSize  True 
+      , Obstacle 25 225 cellSize cellSize  True 
+      , Obstacle 25 275 cellSize cellSize  True 
+      , Obstacle 25 325 cellSize cellSize  True 
+      , Obstacle 25 375 cellSize cellSize  True 
+      , Obstacle 25 425 cellSize cellSize  True 
+      , Obstacle 25 475 cellSize cellSize  True 
+      , Obstacle 25 525 cellSize cellSize  True 
+      , Obstacle 25 575 cellSize cellSize  True 
+      , Obstacle 25 625 cellSize cellSize  True 
+      , Obstacle 725 75 cellSize cellSize   True -- Right Border Hard Blocks 
+      , Obstacle 725 125 cellSize cellSize  True 
+      , Obstacle 725 175 cellSize cellSize  True 
+      , Obstacle 725 225 cellSize cellSize  True 
+      , Obstacle 725 275 cellSize cellSize  True 
+      , Obstacle 725 325 cellSize cellSize  True 
+      , Obstacle 725 375 cellSize cellSize  True 
+      , Obstacle 725 425 cellSize cellSize  True 
+      , Obstacle 725 475 cellSize cellSize  True 
+      , Obstacle 725 525 cellSize cellSize  True 
+      , Obstacle 725 575 cellSize cellSize  True 
+      , Obstacle 725 625 cellSize cellSize  True 
+      , Obstacle 75 625 cellSize cellSize   True  -- Bottom Border Blocks
+      , Obstacle 125 625 cellSize cellSize  True 
+      , Obstacle 175 625 cellSize cellSize  True 
+      , Obstacle 225 625 cellSize cellSize  True 
+      , Obstacle 275 625 cellSize cellSize  True 
+      , Obstacle 325 625 cellSize cellSize  True 
+      , Obstacle 375 625 cellSize cellSize  True 
+      , Obstacle 425 625 cellSize cellSize  True 
+      , Obstacle 475 625 cellSize cellSize  True 
+      , Obstacle 525 625 cellSize cellSize  True 
+      , Obstacle 575 625 cellSize cellSize  True 
+      , Obstacle 625 625 cellSize cellSize  True 
+      , Obstacle 675 625 cellSize cellSize  True 
+      , Obstacle 125 125 cellSize cellSize False -- First row blocks => 125 Y height (index 52) (made it soft blocks first so easily distinguishable)
+      , Obstacle 225 125 cellSize cellSize False 
+      , Obstacle 325 125 cellSize cellSize False 
+      , Obstacle 425 125 cellSize cellSize False 
+      , Obstacle 525 125 cellSize cellSize False 
+      , Obstacle 625 125 cellSize cellSize False 
+      , Obstacle 125 225 cellSize cellSize False -- Second row blocks => 225 Y height
+      , Obstacle 225 225 cellSize cellSize False 
+      , Obstacle 325 225 cellSize cellSize False 
+      , Obstacle 425 225 cellSize cellSize False 
+      , Obstacle 525 225 cellSize cellSize False 
+      , Obstacle 625 225 cellSize cellSize False 
+      , Obstacle 125 325 cellSize cellSize False -- Third row blocks => 325 Y height
+      , Obstacle 225 325 cellSize cellSize False 
+      , Obstacle 325 325 cellSize cellSize False 
+      , Obstacle 425 325 cellSize cellSize False 
+      , Obstacle 525 325 cellSize cellSize False 
+      , Obstacle 625 325 cellSize cellSize False 
+      , Obstacle 125 425 cellSize cellSize False -- Fourth row blocks => 425 Y height
+      , Obstacle 225 425 cellSize cellSize False 
+      , Obstacle 325 425 cellSize cellSize False 
+      , Obstacle 425 425 cellSize cellSize False 
+      , Obstacle 525 425 cellSize cellSize False 
+      , Obstacle 625 425 cellSize cellSize False 
+      , Obstacle 125 525 cellSize cellSize False  -- Fifth row blocks => 525 Y height
+      , Obstacle 225 525 cellSize cellSize False 
+      , Obstacle 325 525 cellSize cellSize False 
+      , Obstacle 425 525 cellSize cellSize False 
+      , Obstacle 525 525 cellSize cellSize False 
+      , Obstacle 625 525 cellSize cellSize False  -- (29 indexes possible to be soft blocks)
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
@@ -391,7 +386,9 @@ drawGame ctx gs = do
   fillRect ctx 0 0 canvasWidth canvasLength
   
   -- Draw all obstacles as gray blocks
-  setFillStyle ctx (toJSString ("rgb(80, 80, 90)" :: String))  -- Dark gray
+  if isHardBlock obs
+    then setFillStyle ctx (toJSString ("rgb(80, 80, 90)" :: String))  -- Dark gray
+    else setFillStyle ctx (toJSString ("rgb(170, 170, 180)" :: String)) -- Light gray
   mapM_ (\obs -> fillRect ctx
                    (obstacleX obs - obstacleWidth obs / 2)   -- Top-left X
                    (obstacleY obs - obstacleHeight obs / 2)  -- Top-left Y
