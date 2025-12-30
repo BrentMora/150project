@@ -65,6 +65,7 @@ data GameState = GameState
   } deriving (Show)
 
 -- Enemy represents the red bouncing squares
+-- Refactoring --> 12/30/2:26, turn enemy into a moving bomb
 data Enemy = Enemy
   { enemyX :: Float       -- X position
   , enemyY :: Float       -- Y position
