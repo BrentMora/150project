@@ -83,6 +83,8 @@ data Obstacle = Obstacle
   , isHardBlock :: Bool -- Type of the obstacle (Boolean bc there's only two)
   } deriving (Show)
 
+--bomb data type question mark ifl it'll help for the next phases
+
 -- ============================================================================
 -- INITIAL STATE - Starting values when the game begins
 -- ============================================================================
@@ -250,6 +252,7 @@ updatePlayer keys obstacles p =
          else if Map.member 39 keys || Map.member 68 keys -- 39=Right Arrow, 68=D
               then speed
               else 0
+--i keep thinking this could be a good way to incorporate space == bomb but am unsure how...
               
     -- Calculate Y velocity: up if Up/W pressed, down if Down/S pressed
     vy = if Map.member 38 keys || Map.member 87 keys -- 38=Up Arrow, 87=W
@@ -396,6 +399,9 @@ drawGame ctx gs = do
                    (obstacleHeight obs))                      -- Height
         (obstacles gs)
   
+-- if bomb == explode then smth smth block up/down/left/right/origin setFillStyle red chuchu
+-- idk how to do the 1s part
+
   -- Draw the player as a blue square (or gray if game over)
   if gameOver gs
     then setFillStyle ctx (toJSString ("rgb(100, 100, 100)" :: String))  -- Gray if dead
@@ -488,6 +494,8 @@ main = mainWidget $ do
     -- GAME LOOP TIMING
     -- ========================================================================
     
+-- timer na di ko alam pano gagawin but ig set a variable to be 1min tapos parang yung tick sa baba na magdedecrement
+
     -- Get current time to start the ticker
     now <- liftIO getCurrentTime
     
