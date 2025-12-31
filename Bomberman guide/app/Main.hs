@@ -190,6 +190,7 @@ initialGameState = GameState
       , Obstacle 425 525 cellSize cellSize True 
       , Obstacle 525 525 cellSize cellSize True 
       , Obstacle 625 525 cellSize cellSize True
+      , Obstacle 75 575 cellSize cellSize False -- Arbitrary Soft Blocks
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
@@ -388,17 +389,20 @@ drawGame ctx gs = do
   setFillStyle ctx (toJSString ("rgb(20, 20, 30)" :: String))  -- Dark blue-gray
   fillRect ctx 0 0 canvasWidth canvasLength
   
-  -- Draw all obstacles as gray blocks
-  if isHardBlock obs
-    then setFillStyle ctx (toJSString ("rgb(80, 80, 90)" :: String))  -- Dark gray
-    else setFillStyle ctx (toJSString ("rgb(170, 170, 180)" :: String)) -- Light gray
-  mapM_ (\obs -> fillRect ctx
-                   (obstacleX obs - obstacleWidth obs / 2)   -- Top-left X
-                   (obstacleY obs - obstacleHeight obs / 2)  -- Top-left Y
-                   (obstacleWidth obs)                        -- Width
-                   (obstacleHeight obs))                      -- Height
+  -- Draw all obstacles with different colors based on hardness
+  mapM_ (\obs -> do
+          if isHardBlock obs
+            then setFillStyle ctx (toJSString ("rgb(80, 80, 90)" :: String))   -- Dark gray
+            else setFillStyle ctx (toJSString ("rgb(170, 170, 180)" :: String)) -- Light gray
+
+          fillRect ctx
+            (obstacleX obs - obstacleWidth obs / 2)   -- Top-left X
+            (obstacleY obs - obstacleHeight obs / 2)  -- Top-left Y
+            (obstacleWidth obs)                       -- Width
+            (obstacleHeight obs)                      -- Height
+        )
         (obstacles gs)
-  
+    
 -- if bomb == explode then smth smth block up/down/left/right/origin setFillStyle red chuchu
 -- idk how to do the 1s part
 
