@@ -104,8 +104,8 @@ initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , enemies = 
-      [ Enemy 100 100 2 1.5 25        -- First enemy: top-left, moving right-down, size 25
-      , Enemy 600 400 (-1.5) (-2) 25  -- Second enemy: bottom-right, moving left-up, size 25
+      [ Enemy 75 75 0 0 50        -- First enemy: top-left, moving right-down, size 25
+      , Enemy 575 575 0 0 50  -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
       [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
