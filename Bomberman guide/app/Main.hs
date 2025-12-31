@@ -311,8 +311,12 @@ checkEnemyObstacleCollision e obs =
   in eRight > oLeft && eLeft < oRight &&
      eBottom > oTop && eTop < oBottom
 
+-- new updateEnemy -> spawns a bomb and checks for collisions
+-- updateBomb :: Map.Map Word () -> [Obstacle] -> Enemy -> Enemy
+-- updateBomb keys obstacles b
+
 -- Update a single enemy's position and handle wall and obstacle bouncing
-updateEnemy :: [Obstacle] -> Enemy -> Enemy
+updateEnemy :: [Obstacle] -> Enemy -> Enemy -- REFACTOR TO SPAWNING BOMBS
 updateEnemy obstacles e = 
   let -- Calculate new position
       newX = enemyX e + enemyVelX e
