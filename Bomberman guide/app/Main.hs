@@ -233,7 +233,7 @@ updatePlayerPlaceBomb :: Map.Map Word () -> Player -> Player
 updatePlayerPlaceBomb keys p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
-      newBH = bombsHeld p - 1
+      newBH = bombsHeld p - keyPress
 
       -- Create a test player with decremented bombs
       testPlayer = p { bombsHeld = newBH }
@@ -241,8 +241,12 @@ updatePlayerPlaceBomb keys p =
   in if oldBH == 0
       then p -- Don't do anything because no valid bombs to be placed
       else testPlayer
-
-
+  
+  where
+    keyPress = 
+      if Map.member 8 keys
+      then 1
+    else 0
 
 -- Update player position based on which keys are pressed
 -- Takes a Map of currently pressed keys and the current player state
