@@ -227,6 +227,20 @@ checkPlayerObstacleCollision p obs =
      pRight > oLeft && pLeft < oRight &&
      pBottom > oTop && pTop < oBottom
 
+-- add bombsHeld updater as a separate function because it's not movement-related
+-- decrements bombsHeld by player -> checks if bomb placing is valid
+updatePlayerPlaceBomb :: Map.Map Word () -> Player -> Player
+updatePlayerPlaceBomb keys p =
+  let -- get current bombsHeld
+      oldBH = bombsHeld p
+
+      -- Create a test player with decremented bombs
+      testPlayer = p { bombsHeld = bombsHeld p - 1 }
+
+  in if oldBH == 0
+      then p -- Don't do anything because no valid bombs to be placed
+      else testPlayer
+
 -- Update player position based on which keys are pressed
 -- Takes a Map of currently pressed keys and the current player state
 -- Returns updated player state
