@@ -53,6 +53,7 @@ data Player = Player
   , playerVelX :: Float   -- X velocity (speed of horizontal movement)
   , playerVelY :: Float   -- Y velocity (speed of vertical movement)
   , playerSize :: Float   -- Size of the player square
+  , bombsHeld :: Int      -- Number of bombs held
   } deriving (Show)
 
 -- GameState holds all the data about the current game
@@ -96,6 +97,7 @@ initialPlayer = Player
   , playerVelX = 0     -- Not moving initially
   , playerVelY = 0     -- Not moving initially
   , playerSize = 30    -- 30 pixels square
+  , bombsHeld = 1      -- 1 bomb held by default
   }
 
 -- Create the initial game state with 2 enemies and obstacles
@@ -244,22 +246,25 @@ updatePlayer keys obstacles p =
      then p  -- Don't move if it would hit an obstacle
      else testPlayer  -- Move to new position if clear
   where
-    speed = 5  -- Movement speed in pixels per frame
-    
-    -- Calculate X velocity: left if Left/A pressed, right if Right/D pressed
-    vx = if Map.member 37 keys || Map.member 65 keys -- 37=Left Arrow, 65=A
-         then -speed
-         else if Map.member 39 keys || Map.member 68 keys -- 39=Right Arrow, 68=D
-              then speed
-              else 0
---i keep thinking this could be a good way to incorporate space == bomb but am unsure how...
-              
-    -- Calculate Y velocity: up if Up/W pressed, down if Down/S pressed
-    vy = if Map.member 38 keys || Map.member 87 keys -- 38=Up Arrow, 87=W
-         then -speed
-         else if Map.member 40 keys || Map.member 83 keys -- 40=Down Arrow, 83=S
-              then speed
-              else 0
+    speed = 5
+
+    -- Horizontal intent
+    vxRaw
+      | Map.member 37 keys || Map.member 65 keys = -speed  -- Left / A
+      | Map.member 39 keys || Map.member 68 keys =  speed  -- Right / D
+      | otherwise = 0
+
+    -- Vertical intent
+    vyRaw
+      | Map.member 38 keys || Map.member 87 keys = -speed  -- Up / W
+      | Map.member 40 keys || Map.member 83 keys =  speed  -- Down / S
+      | otherwise = 0
+
+    -- Enforce orthogonal movement
+    (vx, vy)
+      | vxRaw /= 0 = (vxRaw, 0)   -- prioritize horizontal movement
+      | vyRaw /= 0 = (0, vyRaw)
+      | otherwise  = (0, 0)
 
 -- Check if enemy collides with an obstacle (for bouncing)
 checkEnemyObstacleCollision :: Enemy -> Obstacle -> Bool
