@@ -160,36 +160,36 @@ initialGameState = GameState
       , Obstacle 575 625 cellSize cellSize  True 
       , Obstacle 625 625 cellSize cellSize  True 
       , Obstacle 675 625 cellSize cellSize  True 
-      , Obstacle 125 125 cellSize cellSize False -- First row blocks => 125 Y height (index 52) (made it soft blocks first so easily distinguishable)
-      , Obstacle 225 125 cellSize cellSize False 
-      , Obstacle 325 125 cellSize cellSize False 
-      , Obstacle 425 125 cellSize cellSize False 
-      , Obstacle 525 125 cellSize cellSize False 
-      , Obstacle 625 125 cellSize cellSize False 
-      , Obstacle 125 225 cellSize cellSize False -- Second row blocks => 225 Y height
-      , Obstacle 225 225 cellSize cellSize False 
-      , Obstacle 325 225 cellSize cellSize False 
-      , Obstacle 425 225 cellSize cellSize False 
-      , Obstacle 525 225 cellSize cellSize False 
-      , Obstacle 625 225 cellSize cellSize False 
-      , Obstacle 125 325 cellSize cellSize False -- Third row blocks => 325 Y height
-      , Obstacle 225 325 cellSize cellSize False 
-      , Obstacle 325 325 cellSize cellSize False 
-      , Obstacle 425 325 cellSize cellSize False 
-      , Obstacle 525 325 cellSize cellSize False 
-      , Obstacle 625 325 cellSize cellSize False 
-      , Obstacle 125 425 cellSize cellSize False -- Fourth row blocks => 425 Y height
-      , Obstacle 225 425 cellSize cellSize False 
-      , Obstacle 325 425 cellSize cellSize False 
-      , Obstacle 425 425 cellSize cellSize False 
-      , Obstacle 525 425 cellSize cellSize False 
-      , Obstacle 625 425 cellSize cellSize False 
-      , Obstacle 125 525 cellSize cellSize False  -- Fifth row blocks => 525 Y height
-      , Obstacle 225 525 cellSize cellSize False 
-      , Obstacle 325 525 cellSize cellSize False 
-      , Obstacle 425 525 cellSize cellSize False 
-      , Obstacle 525 525 cellSize cellSize False 
-      , Obstacle 625 525 cellSize cellSize False  -- (29 indexes possible to be soft blocks)
+      , Obstacle 125 125 cellSize cellSize True -- First row blocks => 125 Y height (index 52) (made it soft blocks first so easily distinguishable)
+      , Obstacle 225 125 cellSize cellSize True 
+      , Obstacle 325 125 cellSize cellSize True 
+      , Obstacle 425 125 cellSize cellSize True 
+      , Obstacle 525 125 cellSize cellSize True 
+      , Obstacle 625 125 cellSize cellSize True 
+      , Obstacle 125 225 cellSize cellSize True -- Second row blocks => 225 Y height
+      , Obstacle 225 225 cellSize cellSize True 
+      , Obstacle 325 225 cellSize cellSize True 
+      , Obstacle 425 225 cellSize cellSize True 
+      , Obstacle 525 225 cellSize cellSize True 
+      , Obstacle 625 225 cellSize cellSize True 
+      , Obstacle 125 325 cellSize cellSize True -- Third row blocks => 325 Y height
+      , Obstacle 225 325 cellSize cellSize True 
+      , Obstacle 325 325 cellSize cellSize True 
+      , Obstacle 425 325 cellSize cellSize True 
+      , Obstacle 525 325 cellSize cellSize True 
+      , Obstacle 625 325 cellSize cellSize True 
+      , Obstacle 125 425 cellSize cellSize True -- Fourth row blocks => 425 Y height
+      , Obstacle 225 425 cellSize cellSize True 
+      , Obstacle 325 425 cellSize cellSize True 
+      , Obstacle 425 425 cellSize cellSize True 
+      , Obstacle 525 425 cellSize cellSize True 
+      , Obstacle 625 425 cellSize cellSize True 
+      , Obstacle 125 525 cellSize cellSize True  -- Fifth row blocks => 525 Y height
+      , Obstacle 225 525 cellSize cellSize True 
+      , Obstacle 325 525 cellSize cellSize True 
+      , Obstacle 425 525 cellSize cellSize True 
+      , Obstacle 525 525 cellSize cellSize True 
+      , Obstacle 625 525 cellSize cellSize True
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
