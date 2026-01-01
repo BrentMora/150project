@@ -323,9 +323,9 @@ updateBomb keys obstacles p =
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
-  in if backPressed == 1 -- 
-    then newBomb
-    else Nothing
+  in if backPressed == 1 -- boolean variable to check if backspace is pressed
+    then Just newBomb
+    else Nothing -- returns Nothing if backspace not pressed
   
   where
     backPressed =
