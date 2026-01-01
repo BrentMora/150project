@@ -1,9 +1,9 @@
 number of modules: 2381
-packed metadata:   7763196
+packed metadata:   7763268
 
 code size summary per package (in bytes):
 
-Bomberman-guide-0.1.0.0-inplace-Bomberman-guide:219703
+Bomberman-guide-0.1.0.0-inplace-Bomberman-guide:220124
 MemoTrie-0.6.11-5239d3ed020ec437a79661237a2ae5981eb91fab19ff6e32c093afbb5f20ab24:0
 OneTuple-0.4.2-c13bc035506df21c8381b24faf7faa10f6cc1848e53785ea288f73f25eddd778:0
 QuickCheck-2.16.0.0-05f70f7bb8c88fec1940df1762ecd0b192d2e9fb16042e0e0eacfb27d73f5e65:0
@@ -128,7 +128,7 @@ zenc-0.1.2-107736901f45d7c684acb3ba5e2643cd1cb2a9fd464b1827534aeadbe9740b70:0
 
 code size per module (in bytes):
 
-    $Bomberman-guide-0.1.0.0-inplace-Bomberman-guide$Main:219703
+    $Bomberman-guide-0.1.0.0-inplace-Bomberman-guide$Main:220124
 
     $MemoTrie-0.6.11-5239d3ed020ec437a79661237a2ae5981eb91fab19ff6e32c093afbb5f20ab24$Data.MemoTrie:0
 

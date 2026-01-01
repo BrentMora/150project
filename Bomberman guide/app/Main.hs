@@ -398,6 +398,7 @@ checkCollision p b =
   in -- Rectangles collide if they overlap on both axes
      pRight > bLeft && pLeft < bRight &&  -- X axis overlap
      pBottom > bTop && pTop < bBottom     -- Y axis overlap
+     && isDetonated b
 
 -- Update the entire game state each frame
 updateGameState :: Map.Map Word () -> GameState -> GameState
