@@ -73,6 +73,7 @@ data Bomb = Bomb
   , bombVelY :: Float    -- Y velocity (vertical speed)
   , bombSize :: Float    -- Size of the enemy square
   , isDetonated :: Bool  -- boolean to track detonating status
+  , timer :: Float       -- float timer that ticks down to detonation
   } deriving (Show)
 
 -- Obstacle represents solid blocks that block movement
@@ -106,8 +107,8 @@ initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , bombs = 
-      [ Bomb 75 75 0 0 50 False       -- First enemy: top-left, moving right-down, size 25
-      , Bomb 575 575 0 0 50 False    -- Second enemy: bottom-right, moving left-up, size 25
+      [ Bomb 75 75 0 0 50 False 0       -- First enemy: top-left, moving right-down, size 25
+      , Bomb 575 575 0 0 50 False 0    -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
       [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
@@ -320,7 +321,7 @@ updateBomb keys obstacles p =
     newBX =  playerX p   -- bombX is on the same pX
     newBY = playerY p    -- bombY is on the same pY
 
-    newBomb = Bomb newBX newBY 0 0 cellSize False
+    newBomb = Bomb newBX newBY 0 0 cellSize False 0
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
