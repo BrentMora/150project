@@ -59,19 +59,20 @@ data Player = Player
 -- GameState holds all the data about the current game
 data GameState = GameState
   { player :: Player      -- The player character
-  , enemies :: [Enemy]    -- List of enemy squares
+  , bombs :: [Bomb]       -- List of bombs
   , obstacles :: [Obstacle] -- List of solid obstacle blocks
   , score :: Int          -- Current score
   , gameOver :: Bool      -- Whether the game has ended
   } deriving (Show)
 
--- Enemy represents the red bouncing squares
-data Enemy = Enemy
-  { enemyX :: Float       -- X position
-  , enemyY :: Float       -- Y position
-  , enemyVelX :: Float    -- X velocity (horizontal speed)
-  , enemyVelY :: Float    -- Y velocity (vertical speed)
-  , enemySize :: Float    -- Size of the enemy square
+-- Bomb represents a red square that can detonate into player-hurting red squares
+data Bomb = Bomb
+  { bombX :: Float       -- X position
+  , bombY :: Float       -- Y position
+  , bombVelX :: Float    -- X velocity (horizontal speed)
+  , bombVelY :: Float    -- Y velocity (vertical speed)
+  , bombSize :: Float    -- Size of the enemy square
+  , isDetonated :: Bool  -- boolean to track detonating status
   } deriving (Show)
 
 -- Obstacle represents solid blocks that block movement
@@ -104,9 +105,9 @@ initialPlayer = Player
 initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
-  , enemies = 
-      [ Enemy 75 75 0 0 50        -- First enemy: top-left, moving right-down, size 25
-      , Enemy 575 575 0 0 50  -- Second enemy: bottom-right, moving left-up, size 25
+  , bombs = 
+      [ Bomb 75 75 0 0 50 False       -- First enemy: top-left, moving right-down, size 25
+      , Bomb 575 575 0 0 50 False    -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
       [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
@@ -288,38 +289,38 @@ updatePlayer keys obstacles p =
       | otherwise  = (0, 0)
 
 -- Check if enemy collides with an obstacle (for bouncing)
-checkEnemyObstacleCollision :: Enemy -> Obstacle -> Bool
-checkEnemyObstacleCollision e obs =
-  let ex = enemyX e
-      ey = enemyY e
-      es = enemySize e
+checkEnemyObstacleCollision :: Bomb -> Obstacle -> Bool
+checkEnemyObstacleCollision b obs =
+  let bx = bombX b
+      by = bombY b
+      bs = bombSize b
       ox = obstacleX obs
       oy = obstacleY obs
       ow = obstacleWidth obs
       oh = obstacleHeight obs
       
-      eLeft = ex - es / 2
-      eRight = ex + es / 2
-      eTop = ey - es / 2
-      eBottom = ey + es / 2
+      bLeft = bx - bs / 2
+      bRight = bx + bs / 2
+      bTop = by - bs / 2
+      bBottom = by + bs / 2
       
       oLeft = ox - ow / 2
       oRight = ox + ow / 2
       oTop = oy - oh / 2
       oBottom = oy + oh / 2
       
-  in eRight > oLeft && eLeft < oRight &&
-     eBottom > oTop && eTop < oBottom
+  in bRight > oLeft && bLeft < oRight &&
+     bBottom > oTop && bTop < oBottom
 
 -- new updateEnemy -> spawns a bomb and checks for collisions
 -- returns a new enemy to be added to the list
-updateBomb :: Map.Map Word () -> [Obstacle] -> Player -> Maybe Enemy
+updateBomb :: Map.Map Word () -> [Obstacle] -> Player -> Maybe Bomb
 updateBomb keys obstacles p =
   let -- set new bomb attributes
     newBX =  playerX p   -- bombX is on the same pX
     newBY = playerY p    -- bombY is on the same pY
 
-    newBomb = Enemy newBX newBY 0 0 cellSize
+    newBomb = Bomb newBX newBY 0 0 cellSize False
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
@@ -334,11 +335,11 @@ updateBomb keys obstacles p =
       else 0
 
 -- Update a single enemy's position and handle wall and obstacle bouncing
-updateEnemy :: [Obstacle] -> Enemy -> Enemy -- REFACTOR TO SPAWNING BOMBS
-updateEnemy obstacles e = 
+updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
+updateEnemy obstacles b = 
   let -- Calculate new position
-      newX = enemyX e + enemyVelX e
-      newY = enemyY e + enemyVelY e
+      newX = bombX b + bombVelX b
+      newY = bombY b + bombVelY b
       
       -- Check wall collisions
       hitLeftWall = newX <= 0
@@ -347,40 +348,40 @@ updateEnemy obstacles e =
       hitBottomWall = newY >= canvasLength
       
       -- Create test enemy at new position
-      testEnemy = e { enemyX = newX, enemyY = newY }
+      testBomb = b { bombX = newX, bombY = newY }
       
       -- Check if new position would collide with obstacles
-      hitObstacle = any (checkEnemyObstacleCollision testEnemy) obstacles
+      hitObstacle = any (checkEnemyObstacleCollision testBomb) obstacles
       
       -- Reverse velocity if hitting wall or obstacle
       finalVelX = if hitLeftWall || hitRightWall || hitObstacle 
-                  then -(enemyVelX e) 
-                  else enemyVelX e
+                  then -(bombVelX b) 
+                  else bombVelX b
       finalVelY = if hitTopWall || hitBottomWall || hitObstacle 
-                  then -(enemyVelY e) 
-                  else enemyVelY e
+                  then -(bombVelY b) 
+                  else bombVelY b
       
       -- Clamp position to stay in bounds
       finalX = clamp 0 canvasWidth newX
       finalY = clamp 0 canvasLength newY
       
-  in e { enemyX = finalX
-       , enemyY = finalY
-       , enemyVelX = finalVelX
-       , enemyVelY = finalVelY
+  in b { bombX = finalX
+       , bombY = finalY
+       , bombVelX = finalVelX
+       , bombVelY = finalVelY
        }
 
 -- Check if two rectangles (player and enemy) are colliding
 -- Uses AABB (Axis-Aligned Bounding Box) collision detection
-checkCollision :: Player -> Enemy -> Bool
-checkCollision p e = 
+checkCollision :: Player -> Bomb -> Bool
+checkCollision p b = 
   -- Check if rectangles overlap on both X and Y axes
   let px = playerX p
       py = playerY p
       ps = playerSize p
-      ex = enemyX e
-      ey = enemyY e
-      es = enemySize e
+      bx = bombX b
+      by = bombY b
+      bs = bombSize b
       
       -- Calculate edges of each rectangle
       pLeft = px - ps / 2
@@ -388,14 +389,14 @@ checkCollision p e =
       pTop = py - ps / 2
       pBottom = py + ps / 2
       
-      eLeft = ex - es / 2
-      eRight = ex + es / 2
-      eTop = ey - es / 2
-      eBottom = ey + es / 2
+      bLeft = bx - bs / 2
+      bRight = bx + bs / 2
+      bTop = by - bs / 2
+      bBottom = by + bs / 2
       
   in -- Rectangles collide if they overlap on both axes
-     pRight > eLeft && pLeft < eRight &&  -- X axis overlap
-     pBottom > eTop && pTop < eBottom     -- Y axis overlap
+     pRight > bLeft && pLeft < bRight &&  -- X axis overlap
+     pBottom > bTop && pTop < bBottom     -- Y axis overlap
 
 -- Update the entire game state each frame
 updateGameState :: Map.Map Word () -> GameState -> GameState
@@ -405,17 +406,17 @@ updateGameState keys gs =
   then gs
   else
     let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player, checking obstacles
-        updatedEnemies = map (updateEnemy (obstacles gs)) (enemies gs)  -- Update all enemies, bouncing off obstacles
+        updatedBombs = map (updateEnemy (obstacles gs)) (bombs gs)  -- Update all enemies, bouncing off obstacles
         
         -- Check if player collides with any enemy
-        collision = any (checkCollision updatedPlayer) updatedEnemies
+        collision = any (checkCollision updatedPlayer) updatedBombs
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
         
     in gs
       { player = updatedPlayer
-      , enemies = updatedEnemies
+      , bombs = updatedBombs
       , score = newScore
       , gameOver = collision  -- Game ends on collision
       }
@@ -467,12 +468,12 @@ drawGame ctx gs = do
   -- Draw all enemies as red squares
   setFillStyle ctx (toJSString ("rgb(255, 100, 100)" :: String))  -- Light red
   -- Map over each enemy and draw it
-  mapM_ (\e -> fillRect ctx 
-                 (enemyX e - enemySize e / 2)    -- Top-left X
-                 (enemyY e - enemySize e / 2)    -- Top-left Y
-                 (enemySize e)                    -- Width
-                 (enemySize e))                   -- Height
-        (enemies gs)
+  mapM_ (\b -> fillRect ctx 
+                 (bombX b - bombSize b / 2)    -- Top-left X
+                 (bombY b - bombSize b / 2)    -- Top-left Y
+                 (bombSize b)                    -- Width
+                 (bombSize b))                   -- Height
+        (bombs gs)
   
   -- Draw the score text in the top-left corner
   setFillStyle ctx (toJSString ("rgb(255, 255, 255)" :: String))  -- White
