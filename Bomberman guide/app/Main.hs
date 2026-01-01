@@ -235,7 +235,7 @@ updatePlayerPlaceBomb keys p =
       oldBH = bombsHeld p
       newBH = bombsHeld p - keyPress
 
-      -- Create a test player with decremented bombs
+      -- Create a test player with decremented bomb count
       testPlayer = p { bombsHeld = newBH }
 
   in if oldBH == 0
@@ -244,7 +244,7 @@ updatePlayerPlaceBomb keys p =
   
   where
     keyPress = 
-      if Map.member 8 keys
+      if Map.member 8 keys -- if backspace is pressed, decrement value is 1
       then 1
     else 0
 
@@ -312,8 +312,26 @@ checkEnemyObstacleCollision e obs =
      eBottom > oTop && eTop < oBottom
 
 -- new updateEnemy -> spawns a bomb and checks for collisions
--- updateBomb :: Map.Map Word () -> [Obstacle] -> Enemy -> Enemy
--- updateBomb keys obstacles b
+-- returns a new enemy to be added to the list
+updateBomb :: Map.Map Word () -> [Obstacle] -> Player -> Maybe Enemy
+updateBomb keys obstacles p =
+  let -- set new bomb attributes
+    newBX =  playerX p   -- bombX is on the same pX
+    newBY = playerY p    -- bombY is on the same pY
+
+    newBomb = Enemy newBX newBY 0 0 cellSize
+    -- newBomb is a new bomb that has player coordinates and unmoving
+    -- unmoving == not detonating
+
+  in if backPressed == 1 -- 
+    then newBomb
+    else Nothing
+  
+  where
+    backPressed =
+      if Map.member 8 keys
+        then 1 
+      else 0
 
 -- Update a single enemy's position and handle wall and obstacle bouncing
 updateEnemy :: [Obstacle] -> Enemy -> Enemy -- REFACTOR TO SPAWNING BOMBS
