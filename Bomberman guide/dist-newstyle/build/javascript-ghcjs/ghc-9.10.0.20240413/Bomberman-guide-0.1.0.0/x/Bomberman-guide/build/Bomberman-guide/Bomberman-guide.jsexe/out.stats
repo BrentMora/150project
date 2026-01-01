@@ -1,9 +1,9 @@
 number of modules: 2381
-packed metadata:   7763277
+packed metadata:   7783879
 
 code size summary per package (in bytes):
 
-Bomberman-guide-0.1.0.0-inplace-Bomberman-guide:220124
+Bomberman-guide-0.1.0.0-inplace-Bomberman-guide:228311
 MemoTrie-0.6.11-5239d3ed020ec437a79661237a2ae5981eb91fab19ff6e32c093afbb5f20ab24:0
 OneTuple-0.4.2-c13bc035506df21c8381b24faf7faa10f6cc1848e53785ea288f73f25eddd778:0
 QuickCheck-2.16.0.0-05f70f7bb8c88fec1940df1762ecd0b192d2e9fb16042e0e0eacfb27d73f5e65:0
@@ -49,7 +49,7 @@ free-5.2-1513764ad32c7a972b445d8111a3827cc565b111a1cfd4342f2b6777c864d3e0:0
 generically-0.1.1-e9f7b1cc4d46bfd5290b041f32567fc2cce50a51ec174f1319cde861effd6661:0
 ghc-bignum:              155839
 ghc-boot-th-9.10.0.20240413-inplace:0
-ghc-internal:            953443
+ghc-internal:            953655
 ghc-prim:                16405
 ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a:5412
 ghcjs-dom-0.9.9.2-7b70b77bc89e7028a7b76808348be1318885dcbde7c4d3378cbd66f069225e7f:0
@@ -128,7 +128,7 @@ zenc-0.1.2-107736901f45d7c684acb3ba5e2643cd1cb2a9fd464b1827534aeadbe9740b70:0
 
 code size per module (in bytes):
 
-    $Bomberman-guide-0.1.0.0-inplace-Bomberman-guide$Main:220124
+    $Bomberman-guide-0.1.0.0-inplace-Bomberman-guide$Main:228311
 
     $MemoTrie-0.6.11-5239d3ed020ec437a79661237a2ae5981eb91fab19ff6e32c093afbb5f20ab24$Data.MemoTrie:0
 
@@ -977,7 +977,7 @@ code size per module (in bytes):
     $ghc-internal$GHC.Internal.Exts:    0
     $ghc-internal$GHC.Internal.Fingerprint:10030
     $ghc-internal$GHC.Internal.Fingerprint.Type:839
-    $ghc-internal$GHC.Internal.Float:   150238
+    $ghc-internal$GHC.Internal.Float:   150450
     $ghc-internal$GHC.Internal.Float.ConversionUtils:0
     $ghc-internal$GHC.Internal.Float.RealFracMethods:0
     $ghc-internal$GHC.Internal.Foreign.C.ConstPtr:0

@@ -29,6 +29,9 @@ import Data.Time.Clock (getCurrentTime, diffUTCTime, UTCTime, NominalDiffTime)
 import Data.IORef
 import Control.Concurrent (threadDelay)
 
+-- Other Imports
+import Data.List (minimumBy)
+
 -- ============================================================================
 -- CONSTANTS
 -- ============================================================================
@@ -54,6 +57,10 @@ data Player = Player
   , playerVelY :: Float   -- Y velocity (speed of vertical movement)
   , playerSize :: Float   -- Size of the player square
   , bombsHeld :: Int      -- Number of bombs held
+  , targetX :: Float      -- target is the target bomb placement with
+  , targetY :: Float      -- X and Y coordinates
+  , xCoords :: [Float]    -- list of X coordinates for player to target
+  , yCoords :: [Float]    -- list of Y coordinates for player to target
   } deriving (Show)
 
 -- GameState holds all the data about the current game
@@ -95,11 +102,20 @@ data Obstacle = Obstacle
 initialPlayer :: Player
 initialPlayer = Player
   { playerX = 375      -- Center X
-  , playerY = canvasLength - 110      -- Center Y
+  , playerY = 575      -- Center Y
   , playerVelX = 0     -- Not moving initially
   , playerVelY = 0     -- Not moving initially
   , playerSize = 30    -- 30 pixels square
   , bombsHeld = 1      -- 1 bomb held by default
+  , targetX = 375      -- same as player position
+  , targetY = 575      -- same as player position
+  , xCoords = 
+    [25, 75, 125, 175, 225, 275, 
+    325, 375, 425, 475, 525, 575, 
+    625, 675, 725]
+  , yCoords = 
+    [25, 75, 125, 175, 225, 275, 
+    325, 375, 425, 475, 525, 575, 625]
   }
 
 -- Create the initial game state with 2 enemies and obstacles
@@ -253,16 +269,22 @@ updatePlayerPlaceBomb keys p =
 -- Update player position based on which keys are pressed
 -- Takes a Map of currently pressed keys and the current player state
 -- Returns updated player state
+-- also updates player targeting
 updatePlayer :: Map.Map Word () -> [Obstacle] -> Player -> Player
 updatePlayer keys obstacles p = 
   let -- Calculate desired new position
       newX = playerX p + vx
       newY = playerY p + vy
+
+      -- Calculate desired new target
+      newTargetX = computeTarget newX (xCoords p)
+      newTargetY = computeTarget newY (yCoords p)
       
-      -- Create a test player at the new position
-      testPlayer = p { playerX = clamp 0 canvasWidth newX, playerY = clamp 0 canvasLength newY }
-      
-      -- Check if new position would collide with any obstacle
+      -- Create a test player at the new position with new target
+      testPlayer = p { playerX = clamp 0 canvasWidth newX, playerY = clamp 0 canvasLength newY,
+                        targetX = newTargetX, targetY = newTargetY }
+
+      -- Check if new position and new target would collide with any obstacle
       wouldCollide = any (checkPlayerObstacleCollision testPlayer) obstacles
       
   in if wouldCollide
@@ -288,6 +310,12 @@ updatePlayer keys obstacles p =
       | vxRaw /= 0 = (vxRaw, 0)   -- prioritize horizontal movement
       | vyRaw /= 0 = (0, vyRaw)
       | otherwise  = (0, 0)
+
+-- computes the nearest point for each coordinate
+-- takes in the coordinate of player and list of possible target coordinates
+computeTarget :: Float -> [Float] -> Float
+computeTarget pXY =
+  minimumBy (\a b -> compare (abs (pXY - a)) (abs (pXY - b)))
 
 -- Check if enemy collides with an obstacle (for bouncing)
 checkEnemyObstacleCollision :: Bomb -> Obstacle -> Bool
