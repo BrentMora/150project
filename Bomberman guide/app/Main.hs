@@ -125,8 +125,8 @@ initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , bombs = 
-      [ Bomb 75 75 0 0 50 False 0       -- First enemy: top-left, moving right-down, size 25
-      , Bomb 575 575 0 0 50 False 0    -- Second enemy: bottom-right, moving left-up, size 25
+      [ Bomb 75 75 0 0 50 False 3       -- First enemy: top-left, moving right-down, size 25
+      , Bomb 575 575 0 0 50 False 3    -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
       [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
@@ -360,7 +360,7 @@ updateBomb keys p bombs =
     bombsH = bombsHeld p
     spaceState = spacePressed p
 
-    newBomb = Bomb newBX newBY 0 0 cellSize False 0
+    newBomb = Bomb newBX newBY 0 0 cellSize False 3
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
@@ -474,15 +474,17 @@ updateGameState keys gs =
 
         updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bomb updating
         
+        updatedBombs' = map updateBombTimer updatedBombs
+
         -- Check if player collides with any enemy
-        collision = any (checkCollision updatedPlayer') updatedBombs
+        collision = any (checkCollision updatedPlayer') updatedBombs'
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
         
     in gs
       { player = updatedPlayer'
-      , bombs = updatedBombs
+      , bombs = updatedBombs'
       , score = newScore
       , gameOver = collision  -- Game ends on collision
       }
