@@ -8,7 +8,7 @@ import Reflex.Dom
 import qualified Data.Map as Map
 import Data.Text (pack)
 import qualified Data.Text as T
-import Control.Monad (void)
+import Control.Monad (void, forM_)
 import Control.Monad.IO.Class (liftIO)
 
 -- Import GHCJS DOM types for working with browser APIs
@@ -106,7 +106,7 @@ initialPlayer = Player
   , playerVelX = 0     -- Not moving initially
   , playerVelY = 0     -- Not moving initially
   , playerSize = 30    -- 30 pixels square
-  , bombsHeld = 1      -- 1 bomb held by default
+  , bombsHeld = 100      -- 1 bomb held by default
   , targetX = 375      -- same as player position
   , targetY = 575      -- same as player position
   , xCoords = 
@@ -251,18 +251,18 @@ updatePlayerPlaceBomb :: Map.Map Word () -> Player -> Player
 updatePlayerPlaceBomb keys p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
-      newBH = bombsHeld p - keyPress
+      newBH = bombsHeld p - keyPress -- new bombsHeld
 
       -- Create a test player with decremented bomb count
       testPlayer = p { bombsHeld = newBH }
 
-  in if oldBH == 0
+  in if oldBH == 0 -- if no bombs to be placed
       then p -- Don't do anything because no valid bombs to be placed
-      else testPlayer
+      else testPlayer -- else, you can place a bomb
   
   where
     keyPress = 
-      if Map.member 8 keys -- if backspace is pressed, decrement value is 1
+      if Map.member 32 keys -- if backspace is pressed, decrement value is 1
       then 1
     else 0
 
@@ -342,24 +342,25 @@ checkEnemyObstacleCollision b obs =
      bBottom > oTop && bTop < oBottom
 
 -- new updateEnemy -> spawns a bomb and checks for collisions
--- returns a new enemy to be added to the list
-updateBomb :: Map.Map Word () -> [Obstacle] -> Player -> Maybe Bomb
-updateBomb keys obstacles p =
+-- returns a new bomb to be added to the list
+updateBomb :: Map.Map Word () -> Player -> [Bomb] -> [Bomb]
+updateBomb keys p bombs =
   let -- set new bomb attributes
-    newBX =  playerX p   -- bombX is on the same pX
-    newBY = playerY p    -- bombY is on the same pY
+    newBX =  targetX p 
+    newBY = targetY p
+    bombsH = bombsHeld p
 
     newBomb = Bomb newBX newBY 0 0 cellSize False 0
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
-  in if backPressed == 1 -- boolean variable to check if backspace is pressed
-    then Just newBomb
-    else Nothing -- returns Nothing if backspace not pressed
+  in if backPressed == 1 && bombsH > 0 -- boolean variable to check if backspace is pressed
+    then bombs ++ [newBomb] -- append newBomb to list of bombs
+    else bombs -- returns Nothing if backspace not pressed
   
   where
     backPressed =
-      if Map.member 8 keys
+      if Map.member 32 keys
         then 1 
       else 0
 
@@ -436,16 +437,17 @@ updateGameState keys gs =
   then gs
   else
     let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player, checking obstacles
-        updatedBombs = map (updateEnemy (obstacles gs)) (bombs gs)  -- Update all enemies, bouncing off obstacles
+        updatedPlayer' = updatePlayerPlaceBomb keys updatedPlayer   -- Update player again for bomb updating
+        updatedBombs = updateBomb keys updatedPlayer (bombs gs)  -- Update all enemies, bouncing off obstacles
         
         -- Check if player collides with any enemy
-        collision = any (checkCollision updatedPlayer) updatedBombs
+        collision = any (checkCollision updatedPlayer') updatedBombs
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
         
     in gs
-      { player = updatedPlayer
+      { player = updatedPlayer'
       , bombs = updatedBombs
       , score = newScore
       , gameOver = collision  -- Game ends on collision
@@ -615,6 +617,61 @@ main = mainWidget $ do
               case mCtx of
                 Nothing -> return ()  -- If cast fails, do nothing
                 Just ctx -> drawGame ctx gs  -- Finally, draw the game!
+    
+    -- Display game state details below the canvas
+    el "div" $ do
+      el "h3" $ text "Game State Debug Info:"
+      
+      -- Display current game state values
+      el "div" $ do
+        dynText $ ffor gameState $ \gs -> 
+          "Game Over: " <> (if gameOver gs then "TRUE" else "FALSE") <> " | Score: " <> pack (show $ score gs)
+      
+      -- Display player state
+      el "div" $ do
+        el "h4" $ text "Player:"
+        dynText $ ffor gameState $ \gs ->
+          let p = player gs
+          in "X: " <> pack (show $ playerX p) <> 
+             " | Y: " <> pack (show $ playerY p) <> 
+             " | VelX: " <> pack (show $ playerVelX p) <> 
+             " | VelY: " <> pack (show $ playerVelY p) <> 
+             " | Size: " <> pack (show $ playerSize p) <>
+             " | bombsHeld: " <> pack (show $ bombsHeld p) <>
+             " | targetX: " <> pack (show $ targetX p) <>
+             " | targetY: " <> pack (show $ targetY p) <>
+             " | xCoords: " <> pack (show $ xCoords p) <>
+             " | yCoords: " <> pack (show $ yCoords p)
+      
+      -- Display enemies state
+      el "div" $ do
+        el "h4" $ text "Bombs:"
+        dyn_ $ ffor gameState $ \gs ->
+          el "div" $ do
+            forM_ (zip [1..] (bombs gs)) $ \(i, b) ->
+              el "div" $ text $
+                "Bombs " <> pack (show (i :: Int)) <> ": " <>
+                "X: " <> pack (show $ bombX b) <> 
+                " | Y: " <> pack (show $ bombY b) <> 
+                " | VelX: " <> pack (show $ bombVelX b) <> 
+                " | VelY: " <> pack (show $ bombY b) <> 
+                " | Size: " <> pack (show $ bombSize b) <>
+                " | isDetonated: " <> pack (show $ isDetonated b) <>
+                " | timer: " <> pack (show $ timer b)
+      
+      -- Display obstacles state
+      el "div" $ do
+        el "h4" $ text "Obstacles:"
+        dyn_ $ ffor gameState $ \gs ->
+          el "div" $ do
+            forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
+              el "div" $ text $
+                "Obstacle " <> pack (show (i :: Int)) <> ": " <>
+                "X: " <> pack (show $ obstacleX obs) <> 
+                " | Y: " <> pack (show $ obstacleY obs) <> 
+                " | Width: " <> pack (show $ obstacleWidth obs) <> 
+                " | Height: " <> pack (show $ obstacleHeight obs) <>
+                " | isHard: " <> pack (show $ isHardBlock obs)
     
     return ()
 

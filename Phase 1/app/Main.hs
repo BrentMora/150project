@@ -8,7 +8,7 @@ import Reflex.Dom
 import qualified Data.Map as Map
 import Data.Text (pack)
 import qualified Data.Text as T
-import Control.Monad (void)
+import Control.Monad (void, forM_)
 import Control.Monad.IO.Class (liftIO)
 
 -- Import GHCJS DOM types for working with browser APIs
@@ -35,8 +35,8 @@ import Control.Concurrent (threadDelay)
 
 -- Player represents the blue square controlled by the user
 data Player = Player
-  { playerX :: Float      -- X position on canvas (0-800) * change to 1300 x 1500
-  , playerY :: Float      -- Y position on canvas (0-600) * change to 1300 x 1500
+  { playerX :: Float      -- X position on canvas (0-800)
+  , playerY :: Float      -- Y position on canvas (0-600)
   , playerVelX :: Float   -- X velocity (speed of horizontal movement)
   , playerVelY :: Float   -- Y velocity (speed of vertical movement)
   , playerSize :: Float   -- Size of the player square
@@ -68,11 +68,6 @@ data Obstacle = Obstacle
   , obstacleHeight :: Float -- Height of the obstacle
   } deriving (Show)
 
--- Important notes:
-  -- all Data have position functions
-  -- game state is a collection of Data "objects" and "metadata"
-  -- player velocity is based on user --> not an acceleration constant
-
 -- ============================================================================
 -- INITIAL STATE - Starting values when the game begins
 -- ============================================================================
@@ -88,7 +83,6 @@ initialPlayer = Player
   }
 
 -- Create the initial game state with 2 enemies and obstacles
--- All objects are defined explicitly (especially positions)
 initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
@@ -133,9 +127,7 @@ checkPlayerObstacleCollision p obs =
       oRight = ox + ow / 2
       oTop = oy - oh / 2
       oBottom = oy + oh / 2
-
-      -- /2 because you add half of the object size to the position (center)
-
+      
   in -- Rectangles collide if they overlap on both axes
      pRight > oLeft && pLeft < oRight &&
      pBottom > oTop && pTop < oBottom
@@ -175,7 +167,7 @@ updatePlayer keys obstacles p =
               then speed
               else 0
 
--- Check if enemy collides with an obstacle (for bouncing) -- OBSOLETE
+-- Check if enemy collides with an obstacle (for bouncing)
 checkEnemyObstacleCollision :: Enemy -> Obstacle -> Bool
 checkEnemyObstacleCollision e obs =
   let ex = enemyX e
@@ -200,7 +192,7 @@ checkEnemyObstacleCollision e obs =
      eBottom > oTop && eTop < oBottom
 
 -- Update a single enemy's position and handle wall and obstacle bouncing
-updateEnemy :: [Obstacle] -> Enemy -> Enemy -- OBSOLETE??
+updateEnemy :: [Obstacle] -> Enemy -> Enemy
 updateEnemy obstacles e = 
   let -- Calculate new position
       newX = enemyX e + enemyVelX e
@@ -322,7 +314,7 @@ drawGame ctx gs = do
                (playerSize p)                    -- Width
                (playerSize p)                    -- Height
   
-  -- Draw all enemies as red squares -- REFACTOR
+  -- Draw all enemies as red squares
   setFillStyle ctx (toJSString ("rgb(255, 100, 100)" :: String))  -- Light red
   -- Map over each enemy and draw it
   mapM_ (\e -> fillRect ctx 
@@ -406,7 +398,7 @@ main = mainWidget $ do
     -- Get current time to start the ticker
     now <- liftIO getCurrentTime
     
-    -- Create a tick event that fires ~60 times per second (every 0.016 seconds) -- REFACTOR to 1 second? but might affect movement? separate timer loop?
+    -- Create a tick event that fires ~60 times per second (every 0.016 seconds)
     tick <- tickLossy (0.016 :: NominalDiffTime) now
     
     -- ========================================================================
@@ -440,6 +432,53 @@ main = mainWidget $ do
               case mCtx of
                 Nothing -> return ()  -- If cast fails, do nothing
                 Just ctx -> drawGame ctx gs  -- Finally, draw the game!
+    
+    -- Display game state details below the canvas
+    el "div" $ do
+      el "h3" $ text "Game State Debug Info:"
+      
+      -- Display current game state values
+      el "div" $ do
+        dynText $ ffor gameState $ \gs -> 
+          "Game Over: " <> (if gameOver gs then "TRUE" else "FALSE") <> " | Score: " <> pack (show $ score gs)
+      
+      -- Display player state
+      el "div" $ do
+        el "h4" $ text "Player:"
+        dynText $ ffor gameState $ \gs ->
+          let p = player gs
+          in "X: " <> pack (show $ playerX p) <> 
+             " | Y: " <> pack (show $ playerY p) <> 
+             " | VelX: " <> pack (show $ playerVelX p) <> 
+             " | VelY: " <> pack (show $ playerVelY p) <> 
+             " | Size: " <> pack (show $ playerSize p)
+      
+      -- Display enemies state
+      el "div" $ do
+        el "h4" $ text "Enemies:"
+        dyn_ $ ffor gameState $ \gs ->
+          el "div" $ do
+            forM_ (zip [1..] (enemies gs)) $ \(i, e) ->
+              el "div" $ text $
+                "Enemy " <> pack (show (i :: Int)) <> ": " <>
+                "X: " <> pack (show $ enemyX e) <> 
+                " | Y: " <> pack (show $ enemyY e) <> 
+                " | VelX: " <> pack (show $ enemyVelX e) <> 
+                " | VelY: " <> pack (show $ enemyVelY e) <> 
+                " | Size: " <> pack (show $ enemySize e)
+      
+      -- Display obstacles state
+      el "div" $ do
+        el "h4" $ text "Obstacles:"
+        dyn_ $ ffor gameState $ \gs ->
+          el "div" $ do
+            forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
+              el "div" $ text $
+                "Obstacle " <> pack (show (i :: Int)) <> ": " <>
+                "X: " <> pack (show $ obstacleX obs) <> 
+                " | Y: " <> pack (show $ obstacleY obs) <> 
+                " | Width: " <> pack (show $ obstacleWidth obs) <> 
+                " | Height: " <> pack (show $ obstacleHeight obs)
     
     return ()
 

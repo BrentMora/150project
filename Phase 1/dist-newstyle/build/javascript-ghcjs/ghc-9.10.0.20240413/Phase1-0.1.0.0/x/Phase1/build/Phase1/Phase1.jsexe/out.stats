@@ -1,11 +1,11 @@
 number of modules: 2381
-packed metadata:   7622944
+packed metadata:   8824043
 
 code size summary per package (in bytes):
 
 MemoTrie-0.6.11-5239d3ed020ec437a79661237a2ae5981eb91fab19ff6e32c093afbb5f20ab24:0
 OneTuple-0.4.2-c13bc035506df21c8381b24faf7faa10f6cc1848e53785ea288f73f25eddd778:0
-Phase1-0.1.0.0-inplace-Phase1:179187
+Phase1-0.1.0.0-inplace-Phase1:283444
 QuickCheck-2.16.0.0-05f70f7bb8c88fec1940df1762ecd0b192d2e9fb16042e0e0eacfb27d73f5e65:0
 StateVar-1.2.2-79990eca27229adf0b62f0fabb05fda1814fc28b60414f3cb95832d8073c57e5:0
 adjunctions-4.4.3-349cc869118a98f3c2ef0aede75e24e858304099e3a52982c3ae5bcdba3f33e2:0
@@ -31,12 +31,12 @@ commutative-semigroups-0.2.0.2-53d2ade7d0f2a5d2fcf4efad767a9497afa0c3989594bfeec
 comonad-5.0.9-8eaa2123e164c604c2d04b1b12be4205802cfbdc7d2a90b71969418e11663a1f:0
 constraints-0.14.2-f0620ec4b4be7bb9b0534394254768412b636871426c19dd013e2f8fa4aa0328:0
 constraints-extras-0.4.0.2-2b8de9afc64099b9267191d3eb570e51be7f04d653cce3156749b45544b5080f:0
-containers-0.7-inplace:  149400
+containers-0.7-inplace:  179779
 contravariant-1.5.5-63f93cc78fdc3cce331ee0610e4c737c7cb829edbb8b576c386d6e7455707504:0
 data-default-0.8.0.1-a55fb3a64252fb3705357d02696d1e2a21fc268671168d9a55856044c33883d8:0
 data-fix-0.3.4-5bc556f2657bc5e5bb5fa1447529432f60ae8ccb93dcb6589856c3f67f738498:0
 deepseq-1.5.0.0-inplace: 0
-dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce:104387
+dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce:122309
 dependent-sum-0.7.2.0-fcca03c6bba5f062fe54509b3d5e933dc93ab2f13c667a64cbd6fbb9d0eb982c:1076
 dependent-sum-template-0.2.0.2-c1ad386d945b36df4d586e1760c43de361798c95e396b92a280645c7d389a16d:0
 directory-1.3.8.3-inplace:0
@@ -49,11 +49,11 @@ free-5.2-1513764ad32c7a972b445d8111a3827cc565b111a1cfd4342f2b6777c864d3e0:0
 generically-0.1.1-e9f7b1cc4d46bfd5290b041f32567fc2cce50a51ec174f1319cde861effd6661:0
 ghc-bignum:              155839
 ghc-boot-th-9.10.0.20240413-inplace:0
-ghc-internal:            953443
-ghc-prim:                16405
-ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a:5412
+ghc-internal:            957481
+ghc-prim:                18723
+ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a:11546
 ghcjs-dom-0.9.9.2-7b70b77bc89e7028a7b76808348be1318885dcbde7c4d3378cbd66f069225e7f:0
-ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c:132101
+ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c:176605
 hashable-1.5.0.0-c11e0c0beeb0b221af67d34b657d156253e57a09b9e9f7831b20ccbc36841c77:0
 haskell-src-exts-1.23.1-fb45f33723e02fc5d11f3014866f4fa024094fd3e939269c71c6221dc4a54612:0
 haskell-src-meta-0.8.15-d8a7f536055df200b6ebe6446d56e594a808ade236e3bc4faed8d5402790c24b:0
@@ -77,30 +77,30 @@ newtype-generics-0.6.2-7b4d5cdc8d03716d64b059c0bf3580773a73e2c3035272c3d75b0006c
 os-string-2.0.2-inplace: 0
 parallel-3.3.0.0-d0a7045facf2cf4e1a5a0ab8c24808d74d3d4ecb3dc61bc658e9801138c3c55f:0
 parsec-3.1.17.0-inplace: 0
-patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57:22639
+patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57:106401
 pretty-1.1.3.6-inplace:  0
 prim-uniq-0.2-3261ff56dd7ef4eb37224505938e8ff7895d31a5ab87a032d08255b2eed6d6be:0
-primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae:0
+primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae:1064
 profunctors-5.6.3-98305abe342a929fbe074619ada83bb4900973e333185ec421cb4544203aac93:0
 random-1.3.1-0550ccd4fc6d67dcf573fbf48326fe7a6113167e35696c6ab385affca7f9c904:0
 ref-tf-0.5.0.1-61ffe9ad9d7daf953e30607e5f52588b34621efed8f4ab48037add7428ed6f6f:1656
 reflection-2.1.9-226e27da2635e7ec24ec9babade6603ee244346259d7202a793d7cd0acb4f48b:0
-reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559:1328446
+reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559:1732968
 reflex-dom-0.6.3.4-21eda527088aad26f157ecc7c607f9eea4b2b4d07aacdff2e7a58a9ec10ee98f:0
-reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355:354950
+reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355:880632
 safe-0.3.21-034d6269c3e7760db4f2f3b224d8b2ec09c222d374ff5b778d22ece328ae80c1:0
 scientific-0.3.8.0-e3448de75b94de3632adfbd420ea3932b39f530e56ffecdfda23eb56ae812ccc:0
 semialign-1.3.1-f460ef604b7cbf6ad920aadaca5bf2fd905650097131eda338d27e66eab3ca5c:0
 semigroupoids-6.0.1-c0dae22a08629d0303583c284016c5a64ece745a0f924edca0e47e62803c3b30:0
 semigroups-0.20-6fc809ddd0dc9421091b4ae6caa9b47c4cf676d35a67fad91c0da67a3cf78ade:0
-some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec:2402
+some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec:9562
 splitmix-0.1.3.1-0f05008b03711893344a4740391bcd515344e8e3c2f1b1285b5be1e58f75fc01:0
 stm-2.5.3.1-inplace:     0
 strict-0.5.1-24b2f64215b6fd4f1f62a30f92a95a37d6f01c3752b72fafcf2e7fd87c94f449:0
 syb-0.7.3-0f93c0f23fbd9ee070c9489bcf9975c0f76b80d3b1fd9c49e7a36412a0151f0f:0
 tagged-0.8.10-f176c4c920909f8295a5a1f86009e1268a3fbb49c1e360e58fa3c10d6d6f34d2:0
 template-haskell:        0
-text-2.1.1-inplace:      2481
+text-2.1.1-inplace:      18568
 text-iso8601-0.1.1-5d454fc4fa988a5ffc95c73f807d290a5875dc357fb5ef3c48e0afcd3c5c7f33:0
 text-short-0.1.6-693b1e03befe22cc5807a4bda17f4595faa7caa3e3dbaefcfed711c84cf555f5:0
 th-abstraction-0.7.1.0-04aefb258c2b5c035f7a1c12358c5035d6f08482cf47d7c8849984df6a26cbf5:0
@@ -134,7 +134,7 @@ code size per module (in bytes):
     $OneTuple-0.4.2-c13bc035506df21c8381b24faf7faa10f6cc1848e53785ea288f73f25eddd778$Data.Tuple.Solo:0
     $OneTuple-0.4.2-c13bc035506df21c8381b24faf7faa10f6cc1848e53785ea288f73f25eddd778$Data.Tuple.Solo.TH:0
 
-    $Phase1-0.1.0.0-inplace-Phase1$Main:179187
+    $Phase1-0.1.0.0-inplace-Phase1$Main:283444
 
     $QuickCheck-2.16.0.0-05f70f7bb8c88fec1940df1762ecd0b192d2e9fb16042e0e0eacfb27d73f5e65$Test.QuickCheck:0
     $QuickCheck-2.16.0.0-05f70f7bb8c88fec1940df1762ecd0b192d2e9fb16042e0e0eacfb27d73f5e65$Test.QuickCheck.All:0
@@ -753,18 +753,18 @@ code size per module (in bytes):
     $containers-0.7-inplace$Data.Containers.ListUtils:0
     $containers-0.7-inplace$Data.Graph: 0
     $containers-0.7-inplace$Data.IntMap:0
-    $containers-0.7-inplace$Data.IntMap.Internal:69344
+    $containers-0.7-inplace$Data.IntMap.Internal:73486
     $containers-0.7-inplace$Data.IntMap.Internal.Debug:0
     $containers-0.7-inplace$Data.IntMap.Internal.DeprecatedDebug:0
     $containers-0.7-inplace$Data.IntMap.Lazy:0
     $containers-0.7-inplace$Data.IntMap.Merge.Lazy:0
     $containers-0.7-inplace$Data.IntMap.Merge.Strict:0
     $containers-0.7-inplace$Data.IntMap.Strict:0
-    $containers-0.7-inplace$Data.IntMap.Strict.Internal:39587
+    $containers-0.7-inplace$Data.IntMap.Strict.Internal:40028
     $containers-0.7-inplace$Data.IntSet:0
     $containers-0.7-inplace$Data.IntSet.Internal:0
     $containers-0.7-inplace$Data.Map:   0
-    $containers-0.7-inplace$Data.Map.Internal:40469
+    $containers-0.7-inplace$Data.Map.Internal:66265
     $containers-0.7-inplace$Data.Map.Internal.Debug:0
     $containers-0.7-inplace$Data.Map.Internal.DeprecatedShowTree:0
     $containers-0.7-inplace$Data.Map.Lazy:0
@@ -799,7 +799,7 @@ code size per module (in bytes):
 
     $deepseq-1.5.0.0-inplace$Control.DeepSeq:0
 
-    $dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce$Data.Dependent.Map:49016
+    $dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce$Data.Dependent.Map:66938
     $dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce$Data.Dependent.Map.Internal:55371
     $dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce$Data.Dependent.Map.Lens:0
     $dependent-map-0.4.0.1-d2653627a0332a8e5d27f07c13771ea8f708f648586f5ce2d4cf2f7bc3a79dce$Data.Dependent.Map.PtrEquality:0
@@ -884,7 +884,7 @@ code size per module (in bytes):
 
     $ghc-internal$GHC.Internal.Arr:     1909
     $ghc-internal$GHC.Internal.ArrayArray:0
-    $ghc-internal$GHC.Internal.Base:    10255
+    $ghc-internal$GHC.Internal.Base:    11953
     $ghc-internal$GHC.Internal.Bits:    0
     $ghc-internal$GHC.Internal.ByteOrder:0
     $ghc-internal$GHC.Internal.Char:    604
@@ -913,7 +913,7 @@ code size per module (in bytes):
     $ghc-internal$GHC.Internal.Data.Coerce:0
     $ghc-internal$GHC.Internal.Data.Data:0
     $ghc-internal$GHC.Internal.Data.Dynamic:0
-    $ghc-internal$GHC.Internal.Data.Either:257
+    $ghc-internal$GHC.Internal.Data.Either:513
     $ghc-internal$GHC.Internal.Data.Enum:0
     $ghc-internal$GHC.Internal.Data.Eq: 0
     $ghc-internal$GHC.Internal.Data.Foldable:0
@@ -929,13 +929,13 @@ code size per module (in bytes):
     $ghc-internal$GHC.Internal.Data.Monoid:0
     $ghc-internal$GHC.Internal.Data.OldList:2146
     $ghc-internal$GHC.Internal.Data.Ord:0
-    $ghc-internal$GHC.Internal.Data.Proxy:0
+    $ghc-internal$GHC.Internal.Data.Proxy:89
     $ghc-internal$GHC.Internal.Data.STRef:0
     $ghc-internal$GHC.Internal.Data.STRef.Strict:0
     $ghc-internal$GHC.Internal.Data.Semigroup.Internal:0
     $ghc-internal$GHC.Internal.Data.String:0
     $ghc-internal$GHC.Internal.Data.Traversable:182
-    $ghc-internal$GHC.Internal.Data.Tuple:0
+    $ghc-internal$GHC.Internal.Data.Tuple:412
     $ghc-internal$GHC.Internal.Data.Type.Bool:0
     $ghc-internal$GHC.Internal.Data.Type.Coercion:293
     $ghc-internal$GHC.Internal.Data.Type.Equality:267
@@ -948,7 +948,7 @@ code size per module (in bytes):
     $ghc-internal$GHC.Internal.Debug.Trace:0
     $ghc-internal$GHC.Internal.Desugar: 0
     $ghc-internal$GHC.Internal.Encoding.UTF8:0
-    $ghc-internal$GHC.Internal.Enum:    11394
+    $ghc-internal$GHC.Internal.Enum:    12361
     $ghc-internal$GHC.Internal.Environment:0
     $ghc-internal$GHC.Internal.Err:     1172
     $ghc-internal$GHC.Internal.Event:   0
@@ -1061,7 +1061,7 @@ code size per module (in bytes):
     $ghc-internal$GHC.Internal.Ptr:     241
     $ghc-internal$GHC.Internal.RTS.Flags:0
     $ghc-internal$GHC.Internal.Read:    9073
-    $ghc-internal$GHC.Internal.Real:    19761
+    $ghc-internal$GHC.Internal.Real:    20377
     $ghc-internal$GHC.Internal.Records: 0
     $ghc-internal$GHC.Internal.ResponseFile:0
     $ghc-internal$GHC.Internal.ST:      0
@@ -1114,7 +1114,7 @@ code size per module (in bytes):
     $ghc-internal$GHC.Internal.Word:    600
 
     $ghc-prim$GHC.CString:              5014
-    $ghc-prim$GHC.Classes:              3391
+    $ghc-prim$GHC.Classes:              5330
     $ghc-prim$GHC.Debug:                0
     $ghc-prim$GHC.Magic:                0
     $ghc-prim$GHC.Magic.Dict:           0
@@ -1123,7 +1123,7 @@ code size per module (in bytes):
     $ghc-prim$GHC.Prim.Panic:           328
     $ghc-prim$GHC.Prim.PtrEq:           0
     $ghc-prim$GHC.PrimopWrappers:       0
-    $ghc-prim$GHC.Tuple:                2389
+    $ghc-prim$GHC.Tuple:                2768
     $ghc-prim$GHC.Types:                4949
 
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$Data.JSString:0
@@ -1139,7 +1139,7 @@ code size per module (in bytes):
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$Data.JSString.Read:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$Data.JSString.RealFloat:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$Data.JSString.RegExp:0
-    $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$Data.JSString.Text:774
+    $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$Data.JSString.Text:1262
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Buffer:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Buffer.Types:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Concurrent:0
@@ -1147,7 +1147,7 @@ code size per module (in bytes):
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Foreign.Export:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Foreign.Internal:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Internal.Types:0
-    $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Marshal:3304
+    $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Marshal:8950
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Marshal.Internal:1334
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Marshal.Pure:0
     $ghcjs-base-0.8.0.4-a458c262b1879081c48b4a7c28a4c331de46745b6964b7380457a440d63ed57a$GHCJS.Nullable:0
@@ -1484,7 +1484,7 @@ code size per module (in bytes):
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.NavigatorUserMediaError:0
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.NavigatorUserMediaErrorCallback:0
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.NavigatorUserMediaSuccessCallback:0
-    $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.Node:2384
+    $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.Node:16450
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.NodeFilter:0
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.NodeIterator:0
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Generated.NodeList:0
@@ -1806,7 +1806,7 @@ code size per module (in bytes):
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.SpeechRecognitionEvent:0
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.Window:0
     $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.JSFFI.XMLHttpRequest:0
-    $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.Types:81636
+    $ghcjs-dom-javascript-0.9.9.3-c2c050811f93de9d54b44a0f9c5b8c9840caed9ef4ab18dbdd0a0132aa25ad8c$GHCJS.DOM.Types:112074
 
     $hashable-1.5.0.0-c11e0c0beeb0b221af67d34b657d156253e57a09b9e9f7831b20ccbc36841c77$Data.Hashable:0
     $hashable-1.5.0.0-c11e0c0beeb0b221af67d34b657d156253e57a09b9e9f7831b20ccbc36841c77$Data.Hashable.Class:0
@@ -2073,16 +2073,16 @@ code size per module (in bytes):
     $parsec-3.1.17.0-inplace$Text.ParserCombinators.Parsec.Prim:0
     $parsec-3.1.17.0-inplace$Text.ParserCombinators.Parsec.Token:0
 
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Functor.Misc:6507
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Functor.Misc:19944
     $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Monoid.DecidablyEmpty:0
     $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch:0
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.Class:235
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.DMap:0
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.DMapWithMove:8804
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.IntMap:7093
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.Map:0
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.MapWithMove:0
-    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.MapWithPatchingMove:0
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.Class:456
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.DMap:11442
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.DMapWithMove:52815
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.IntMap:10342
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.Map:2796
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.MapWithMove:1172
+    $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.MapWithPatchingMove:7434
     $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Patch.PatchOrReplacement:0
     $patch-0.0.8.4-a632f129381f104ba1faf22bb17b7520deeca228968316349498c8ce45f73e57$Data.Semigroup.Additive:0
 
@@ -2098,7 +2098,7 @@ code size per module (in bytes):
     $prim-uniq-0.2-3261ff56dd7ef4eb37224505938e8ff7895d31a5ab87a032d08255b2eed6d6be$Unsafe.Unique.Prim:0
     $prim-uniq-0.2-3261ff56dd7ef4eb37224505938e8ff7895d31a5ab87a032d08255b2eed6d6be$Unsafe.Unique.Tag:0
 
-    $primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae$Control.Monad.Primitive:0
+    $primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae$Control.Monad.Primitive:1064
     $primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae$Data.Primitive:0
     $primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae$Data.Primitive.Array:0
     $primitive-0.9.1.0-ddabb9a62c29d7b605a458a40b293965921ee36efa7f4ba56a40e36f442bc4ae$Data.Primitive.ByteArray:0
@@ -2148,12 +2148,12 @@ code size per module (in bytes):
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Data.Map.Misc:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Data.WeakBag:2149
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Adjustable.Class:0
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Adjustable.Class:8983
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.BehaviorWriter.Base:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.BehaviorWriter.Class:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Class:26552
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Class:54701
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Collection:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Dynamic:3350
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Dynamic:7972
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Dynamic.TH:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Dynamic.Uniq:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.DynamicWriter:0
@@ -2166,23 +2166,23 @@ code size per module (in bytes):
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.FunctorMaybe:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Host.Class:4137
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Host.Headless:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Network:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.NotReady.Class:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PerformEvent.Base:55271
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Network:9125
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.NotReady.Class:1060
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PerformEvent.Base:198877
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PerformEvent.Class:5241
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PostBuild.Base:31734
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PostBuild.Class:0
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PostBuild.Base:74321
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.PostBuild.Class:1351
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Profiled:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Pure:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Query.Base:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Query.Class:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Requester.Base:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Requester.Base.Internal:59883
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Requester.Base.Internal:212291
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Requester.Class:3785
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Spider:0
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Spider.Internal:1070328
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Spider.Internal:1070532
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Time:29903
-    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.TriggerEvent.Base:21150
+    $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.TriggerEvent.Base:33577
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.TriggerEvent.Class:1117
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Widget.Basic:0
     $reflex-0.9.4.0-1ec1622e679e875c0240e2d3f978054f7ade3968f413f2b70ab9ccdb098dd559$Reflex.Workflow:0
@@ -2193,13 +2193,13 @@ code size per module (in bytes):
 
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Foreign.JavaScript.Internal.Utils:0
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Foreign.JavaScript.Orphans:0
-    $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Foreign.JavaScript.TH:36118
+    $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Foreign.JavaScript.TH:45903
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Foreign.JavaScript.Utils:0
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Class:8108
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Class.Events:40829
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Class.TH:0
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Hydratable:0
-    $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Immediate:170670
+    $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Immediate:686567
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.InputDisabled:0
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Builder.Static:0
     $reflex-dom-core-0.8.1.4-84111fb2c823858bb5260d344a436a6564a8d275bc293a066dafad836d40e355$Reflex.Dom.Class:0
@@ -2276,13 +2276,13 @@ code size per module (in bytes):
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.EqP:0
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.GADT.Compare:0
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.GADT.DeepSeq:0
-    $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.GADT.Internal:2402
+    $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.GADT.Internal:2675
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.GADT.Show:0
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.OrdP:0
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.Some:0
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.Some.Church:0
     $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.Some.GADT:0
-    $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.Some.Newtype:0
+    $some-1.0.6-344f7d429a9c1e5d390416a8dfcecbf952b6d6de15a92a3273275a4b8fb8d4ec$Data.Some.Newtype:6887
 
     $splitmix-0.1.3.1-0f05008b03711893344a4740391bcd515344e8e3c2f1b1285b5be1e58f75fc01$Data.Bits.Compat:0
     $splitmix-0.1.3.1-0f05008b03711893344a4740391bcd515344e8e3c2f1b1285b5be1e58f75fc01$System.Random.SplitMix:0
@@ -2342,14 +2342,14 @@ code size per module (in bytes):
     $template-haskell$System.FilePath.Posix:0
     $template-haskell$System.FilePath.Windows:0
 
-    $text-2.1.1-inplace$Data.Text:      674
+    $text-2.1.1-inplace$Data.Text:      9435
     $text-2.1.1-inplace$Data.Text.Array:265
     $text-2.1.1-inplace$Data.Text.Encoding:0
     $text-2.1.1-inplace$Data.Text.Encoding.Error:0
     $text-2.1.1-inplace$Data.Text.Foreign:0
     $text-2.1.1-inplace$Data.Text.IO:   0
     $text-2.1.1-inplace$Data.Text.IO.Utf8:0
-    $text-2.1.1-inplace$Data.Text.Internal:1140
+    $text-2.1.1-inplace$Data.Text.Internal:7314
     $text-2.1.1-inplace$Data.Text.Internal.ArrayUtils:0
     $text-2.1.1-inplace$Data.Text.Internal.Builder:0
     $text-2.1.1-inplace$Data.Text.Internal.Builder.Functions:0
@@ -2366,7 +2366,7 @@ code size per module (in bytes):
     $text-2.1.1-inplace$Data.Text.Internal.Fusion.CaseMapping:0
     $text-2.1.1-inplace$Data.Text.Internal.Fusion.Common:0
     $text-2.1.1-inplace$Data.Text.Internal.Fusion.Size:0
-    $text-2.1.1-inplace$Data.Text.Internal.Fusion.Types:0
+    $text-2.1.1-inplace$Data.Text.Internal.Fusion.Types:1152
     $text-2.1.1-inplace$Data.Text.Internal.IO:0
     $text-2.1.1-inplace$Data.Text.Internal.IsAscii:0
     $text-2.1.1-inplace$Data.Text.Internal.Lazy:0
