@@ -249,8 +249,8 @@ checkPlayerObstacleCollision p obs =
 
 -- add bombsHeld updater as a separate function because it's not movement-related
 -- decrements bombsHeld by player -> checks if bomb placing is valid
-updatePlayerPlaceBomb :: Map.Map Word () -> Player -> Player
-updatePlayerPlaceBomb keys p =
+updatePlayerPlaceBomb :: Map.Map Word () -> Bool -> Player -> Player
+updatePlayerPlaceBomb keys isBA p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
       newBH = bombsHeld p - 1        -- new bombsHeld
@@ -262,6 +262,7 @@ updatePlayerPlaceBomb keys p =
   in if oldBH > 0           -- if a bomb can be placed
     && spaceState == False  -- if spacekey was released previously
     && keyPress == 1        -- if spacekey is now pressed
+    && isBA                 -- and bomb was successfully added
       then testPlayer       -- bomb can be placed
     else if keyPress == 0   -- reset if spacekey was released
       then p { spacePressed = False }
@@ -351,7 +352,7 @@ checkEnemyObstacleCollision b obs =
 
 -- new updateEnemy -> spawns a bomb and checks for collisions
 -- returns a new bomb to be added to the list
-updateBomb :: Map.Map Word () -> Player -> [Bomb] -> [Bomb]
+updateBomb :: Map.Map Word () -> Player -> [Bomb] -> ([Bomb], Bool)
 updateBomb keys p bombs =
   let -- set new bomb attributes
     newBX =  targetX p 
@@ -367,8 +368,8 @@ updateBomb keys p bombs =
     && bombsH > 0           -- bombs can be placed
     && spaceState == False  -- spacekey was released
     && checkIfBombExists newBomb bombs == False -- bomb does not already exist
-    then bombs ++ [newBomb] -- append newBomb to list of bombs
-    else bombs -- returns Nothing if backspace not pressed
+    then (bombs ++ [newBomb], True) -- append newBomb to list of bombs, and signify success True
+    else (bombs, False) -- returns Nothing if backspace not pressed
   
   where
     backPressed =
@@ -469,8 +470,9 @@ updateGameState keys gs =
   then gs
   else
     let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player, checking obstacles
-        updatedPlayer' = updatePlayerPlaceBomb keys updatedPlayer   -- Update player again for bomb updating
-        updatedBombs = updateBomb keys updatedPlayer (bombs gs)  -- Update all enemies, bouncing off obstacles
+        (updatedBombs, isBombAdded) = updateBomb keys updatedPlayer (bombs gs)  -- Update bombs
+
+        updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bomb updating
         
         -- Check if player collides with any enemy
         collision = any (checkCollision updatedPlayer') updatedBombs
