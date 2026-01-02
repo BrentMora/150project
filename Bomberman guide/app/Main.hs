@@ -263,10 +263,10 @@ updatePlayerPlaceBomb keys p =
     && spaceState == False  -- if spacekey was released previously
     && keyPress == 1        -- if spacekey is now pressed
       then testPlayer       -- bomb can be placed
-    else if keyPress == 0
+    else if keyPress == 0   -- reset if spacekey was released
       then p { spacePressed = False }
     else
-      p                -- bomb cannot be placed
+      p                     -- bomb cannot be placed
   
   where
     keyPress = 
@@ -363,8 +363,10 @@ updateBomb keys p bombs =
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
-  in if backPressed == 1 && bombsH > 0 && spaceState == False
-    -- boolean variable to check if backspace is pressed, bombs can be placed, and spacekey is not pressed
+  in if backPressed == 1    -- boolean variable to check if backspace is pressed
+    && bombsH > 0           -- bombs can be placed
+    && spaceState == False  -- spacekey was released
+    && checkIfBombExists newBomb bombs == False -- bomb does not already exist
     then bombs ++ [newBomb] -- append newBomb to list of bombs
     else bombs -- returns Nothing if backspace not pressed
   
@@ -373,6 +375,12 @@ updateBomb keys p bombs =
       if Map.member 32 keys
         then 1 
       else 0
+
+checkIfBombExists :: Bomb -> [Bomb] -> Bool
+checkIfBombExists b bombs =
+  any (\x -> 
+    bombX x == bombX b
+    && bombY x == bombY b) bombs
 
 -- update bomb timer, ticks down every server tick which is 0.16 seconds, explodes if 0 seconds
 updateBombTimer :: Bomb -> Bomb
