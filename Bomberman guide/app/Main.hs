@@ -253,15 +253,20 @@ updatePlayerPlaceBomb :: Map.Map Word () -> Player -> Player
 updatePlayerPlaceBomb keys p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
-      newBH = bombsHeld p - keyPress -- new bombsHeld
+      newBH = bombsHeld p - 1        -- new bombsHeld
       spaceState = spacePressed p    -- state of spacePressed
 
       -- Create a test player with decremented bomb count and spacePressed as True
       testPlayer = p { bombsHeld = newBH, spacePressed = True }
 
-  in if oldBH > 0 && spaceState == False -- if player has a bomb to place and has released the spacekey
-      then testPlayer -- bomb can be placed
-      else p { spacePressed = False } -- bomb cannot be placed and reset space state
+  in if oldBH > 0           -- if a bomb can be placed
+    && spaceState == False  -- if spacekey was released previously
+    && keyPress == 1        -- if spacekey is now pressed
+      then testPlayer       -- bomb can be placed
+    else if keyPress == 0
+      then p { spacePressed = False }
+    else
+      p                -- bomb cannot be placed
   
   where
     keyPress = 
@@ -603,7 +608,7 @@ main = mainWidget $ do
     now <- liftIO getCurrentTime
     
     -- Create a tick event that fires ~60 times per second (every 0.016 seconds)
-    tick <- tickLossy (0.016 :: NominalDiffTime) now
+    tick <- tickLossy (0.16 :: NominalDiffTime) now
     
     -- ========================================================================
     -- GAME STATE UPDATES
@@ -660,7 +665,8 @@ main = mainWidget $ do
              " | targetX: " <> pack (show $ targetX p) <>
              " | targetY: " <> pack (show $ targetY p) <>
              " | xCoords: " <> pack (show $ xCoords p) <>
-             " | yCoords: " <> pack (show $ yCoords p)
+             " | yCoords: " <> pack (show $ yCoords p) <>
+             " | spacePressed: " <> pack (show $ spacePressed p)
       
       -- Display enemies state
       el "div" $ do
@@ -679,26 +685,17 @@ main = mainWidget $ do
                 " | timer: " <> pack (show $ timer b)
       
       -- Display obstacles state
-      el "div" $ do
-        el "h4" $ text "Obstacles:"
-        dyn_ $ ffor gameState $ \gs ->
-          el "div" $ do
-            forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
-              el "div" $ text $
-                "Obstacle " <> pack (show (i :: Int)) <> ": " <>
-                "X: " <> pack (show $ obstacleX obs) <> 
-                " | Y: " <> pack (show $ obstacleY obs) <> 
-                " | Width: " <> pack (show $ obstacleWidth obs) <> 
-                " | Height: " <> pack (show $ obstacleHeight obs) <>
-                " | isHard: " <> pack (show $ isHardBlock obs)
+      --el "div" $ do
+        --el "h4" $ text "Obstacles:"
+        --dyn_ $ ffor gameState $ \gs ->
+          --el "div" $ do
+            --forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
+              --el "div" $ text $
+                --"Obstacle " <> pack (show (i :: Int)) <> ": " <>
+                --"X: " <> pack (show $ obstacleX obs) <> 
+                --" | Y: " <> pack (show $ obstacleY obs) <> 
+                --" | Width: " <> pack (show $ obstacleWidth obs) <> 
+                --" | Height: " <> pack (show $ obstacleHeight obs) <>
+                --" | isHard: " <> pack (show $ isHardBlock obs)
     
     return ()
-
-  -- Display game features below the canvas
-  el "div" $ do
-    el "h3" $ text "Game Features:"
-    el "ul" $ do
-      el "li" $ text "Player movement with keyboard input (WASD/Arrows)"
-      el "li" $ text "Enemy entities with bouncing physics"
-      el "li" $ text "Canvas 2D rendering at 60 FPS"
-      el "li" $ text "Game state management with Reflex FRP"
