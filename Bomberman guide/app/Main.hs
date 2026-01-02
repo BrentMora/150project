@@ -59,6 +59,7 @@ data Player = Player
   , bombsHeld :: Int      -- Number of bombs held
   , targetX :: Float      -- target is the target bomb placement with
   , targetY :: Float      -- X and Y coordinates
+  , spacePressed :: Bool  -- saves state, whether or not spacekey was pressed
   , xCoords :: [Float]    -- list of X coordinates for player to target
   , yCoords :: [Float]    -- list of Y coordinates for player to target
   } deriving (Show)
@@ -109,6 +110,7 @@ initialPlayer = Player
   , bombsHeld = 100      -- 1 bomb held by default
   , targetX = 375      -- same as player position
   , targetY = 575      -- same as player position
+  , spacePressed = False -- spacekey is not pressed by default
   , xCoords = 
     [25, 75, 125, 175, 225, 275, 
     325, 375, 425, 475, 525, 575, 
@@ -252,13 +254,14 @@ updatePlayerPlaceBomb keys p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
       newBH = bombsHeld p - keyPress -- new bombsHeld
+      spaceState = spacePressed p    -- state of spacePressed
 
-      -- Create a test player with decremented bomb count
-      testPlayer = p { bombsHeld = newBH }
+      -- Create a test player with decremented bomb count and spacePressed as True
+      testPlayer = p { bombsHeld = newBH, spacePressed = True }
 
-  in if oldBH == 0 -- if no bombs to be placed
-      then p -- Don't do anything because no valid bombs to be placed
-      else testPlayer -- else, you can place a bomb
+  in if oldBH > 0 && spaceState == False -- if player has a bomb to place and has released the spacekey
+      then testPlayer -- bomb can be placed
+      else p { spacePressed = False } -- bomb cannot be placed and reset space state
   
   where
     keyPress = 
@@ -349,12 +352,14 @@ updateBomb keys p bombs =
     newBX =  targetX p 
     newBY = targetY p
     bombsH = bombsHeld p
+    spaceState = spacePressed p
 
     newBomb = Bomb newBX newBY 0 0 cellSize False 0
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
-  in if backPressed == 1 && bombsH > 0 -- boolean variable to check if backspace is pressed
+  in if backPressed == 1 && bombsH > 0 && spaceState == False
+    -- boolean variable to check if backspace is pressed, bombs can be placed, and spacekey is not pressed
     then bombs ++ [newBomb] -- append newBomb to list of bombs
     else bombs -- returns Nothing if backspace not pressed
   
@@ -364,6 +369,20 @@ updateBomb keys p bombs =
         then 1 
       else 0
 
+-- update bomb timer, ticks down every server tick which is 0.16 seconds, explodes if 0 seconds
+updateBombTimer :: Bomb -> Bomb
+updateBombTimer b =
+  let -- decrement bomb timer by 0.16 seconds every function call
+    oldTime = timer b
+    timeTick = 0.16
+  
+  in if oldTime <= 0 -- if time is up, detonate
+    then
+      b { isDetonated = True }
+    else
+      b { timer = oldTime - timeTick }
+
+-- OBSOLETE
 -- Update a single enemy's position and handle wall and obstacle bouncing
 updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
 updateEnemy obstacles b = 
