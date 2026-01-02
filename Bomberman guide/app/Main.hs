@@ -49,6 +49,9 @@ cellSize = 50
 -- DATA TYPES - Define the structure of our game state
 -- ============================================================================
 
+data DetonationStatus = Ticking | Detonating | Done
+  deriving (Show, Eq)
+
 -- Player represents the blue square controlled by the user
 data Player = Player
   { playerX :: Float      -- X position on canvas
@@ -80,7 +83,7 @@ data Bomb = Bomb
   , bombVelX :: Float    -- X velocity (horizontal speed)
   , bombVelY :: Float    -- Y velocity (vertical speed)
   , bombSize :: Float    -- Size of the enemy square
-  , isDetonated :: Bool  -- boolean to track detonating status
+  , isDetonated :: DetonationStatus  -- boolean to track detonating status
   , timer :: Float       -- float timer that ticks down to detonation
   } deriving (Show)
 
@@ -125,8 +128,8 @@ initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , bombs = 
-      [ Bomb 75 75 0 0 50 False 3       -- First enemy: top-left, moving right-down, size 25
-      , Bomb 575 575 0 0 50 False 3    -- Second enemy: bottom-right, moving left-up, size 25
+      [ Bomb 75 75 0 0 50 Ticking 3       -- First enemy: top-left, moving right-down, size 25
+      , Bomb 575 575 0 0 50 Ticking 3    -- Second enemy: bottom-right, moving left-up, size 25
       ]
   , obstacles =
       [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
@@ -360,7 +363,7 @@ updateBomb keys p bombs =
     bombsH = bombsHeld p
     spaceState = spacePressed p
 
-    newBomb = Bomb newBX newBY 0 0 cellSize False 3
+    newBomb = Bomb newBX newBY 0 0 cellSize Ticking 3
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
@@ -389,14 +392,78 @@ updateBombTimer b =
   let -- decrement bomb timer by 0.16 seconds every function call
     oldTime = timer b
     timeTick = 0.16
+    bDS = isDetonated b
   
   in if oldTime <= 0 -- if time is up, detonate
+    && bDS == Ticking
     then
-      b { isDetonated = True }
-    else
+      b { isDetonated = Detonating , timer = 1}
+    else if
+      oldTime <= 0
+      && bDS == Detonating
+      then 
+        b { isDetonated = Done }
+    else 
       b { timer = oldTime - timeTick }
 
--- OBSOLETE
+
+updateBombDetonate :: [Bomb] -> [Bomb]
+updateBombDetonate bombs =
+  concatMap update bombs
+  where
+    update b
+      | isDetonated b == Ticking
+        && timer b <= 0 = detonateBomb b
+      | otherwise     = [b]
+
+detonateBomb :: Bomb -> [Bomb]
+detonateBomb b =
+  let
+    bX = bombX b
+    bY = bombY b 
+
+    newBombUp = Bomb { 
+      bombX = bX
+      , bombY = bY - 50
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = cellSize
+      , isDetonated = Detonating
+      , timer = 1
+     }
+    
+    newBombDown = Bomb {
+      bombX = bX
+      , bombY = bY + 50
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = cellSize
+      , isDetonated = Detonating
+      , timer = 1
+    }
+
+    newBombLeft = Bomb {
+      bombX = bX - 50
+      , bombY = bY
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = cellSize
+      , isDetonated = Detonating
+      , timer = 1
+    }
+
+    newBombRight = Bomb {
+      bombX = bX + 50
+      , bombY = bY
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = cellSize
+      , isDetonated = Detonating
+      , timer = 1
+    }
+  
+  in [newBombUp, newBombDown, newBombLeft, newBombRight, b]
+
 -- Update a single enemy's position and handle wall and obstacle bouncing
 updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
 updateEnemy obstacles b = 
@@ -460,7 +527,7 @@ checkCollision p b =
   in -- Rectangles collide if they overlap on both axes
      pRight > bLeft && pLeft < bRight &&  -- X axis overlap
      pBottom > bTop && pTop < bBottom     -- Y axis overlap
-     && isDetonated b
+     && (isDetonated b == Detonating)
 
 -- Update the entire game state each frame
 updateGameState :: Map.Map Word () -> GameState -> GameState
@@ -476,15 +543,17 @@ updateGameState keys gs =
         
         updatedBombs' = map updateBombTimer updatedBombs
 
+        updatedBombs'' = updateBombDetonate updatedBombs'
+
         -- Check if player collides with any enemy
-        collision = any (checkCollision updatedPlayer') updatedBombs'
+        collision = any (checkCollision updatedPlayer') updatedBombs''
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
         
     in gs
       { player = updatedPlayer'
-      , bombs = updatedBombs'
+      , bombs = updatedBombs''
       , score = newScore
       , gameOver = collision  -- Game ends on collision
       }
