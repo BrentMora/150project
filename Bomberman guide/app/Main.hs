@@ -464,6 +464,13 @@ detonateBomb b =
   
   in [newBombUp, newBombDown, newBombLeft, newBombRight, b]
 
+updateBombRemoval :: [Bomb] -> [Bomb]
+updateBombRemoval bombs =
+  filter keep bombs
+  where
+    keep b =
+      not (isDetonated b == Detonating && timer b <= 0)
+
 -- Update a single enemy's position and handle wall and obstacle bouncing
 updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
 updateEnemy obstacles b = 
@@ -542,18 +549,18 @@ updateGameState keys gs =
         updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bomb updating
         
         updatedBombs' = map updateBombTimer updatedBombs
-
         updatedBombs'' = updateBombDetonate updatedBombs'
+        updatedBombs''' = updateBombRemoval updatedBombs''
 
         -- Check if player collides with any enemy
-        collision = any (checkCollision updatedPlayer') updatedBombs''
+        collision = any (checkCollision updatedPlayer') updatedBombs'''
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
         
     in gs
       { player = updatedPlayer'
-      , bombs = updatedBombs''
+      , bombs = updatedBombs'''
       , score = newScore
       , gameOver = collision  -- Game ends on collision
       }
