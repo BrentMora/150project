@@ -362,16 +362,20 @@ checkBombObstacleCollision b obs =
   in bRight > oLeft && bLeft < oRight &&
      bBottom > oTop && bTop < oBottom
 
--- Check if bomb collides with an obstacle
+-- Check if bomb collides with a bombs
 checkBombBombCollision :: Bomb -> Bomb -> Bool
 checkBombBombCollision b ob =
-  let bx = bombX b
+  let 
+      bds = isDetonated b
+      obds = isDetonated ob
+    
+      bx = bombX b
       by = bombY b
       bs = bombSize b
-      ox = obstacleX ob
-      oy = obstacleY ob
-      ow = obstacleWidth ob
-      oh = obstacleHeight ob
+      ox = bombX ob
+      oy = bombY ob
+      ow = bombSize ob
+      oh = bombSize ob
       
       bLeft = bx - bs / 2
       bRight = bx + bs / 2
@@ -384,7 +388,9 @@ checkBombBombCollision b ob =
       oBottom = oy + oh / 2
       
   in bRight > oLeft && bLeft < oRight &&
-     bBottom > oTop && bTop < oBottom
+     bBottom > oTop && bTop < oBottom &&
+     ((bds == Detonating && obds == Ticking) ||
+     (obds == Detonating && bds == Ticking))
 
 -- spawns a bomb and checks for collisions
 -- returns a (new bomb, success signal) to be added to the list
@@ -439,11 +445,22 @@ updateBombTimer b =
     else 
       b { timer = oldTime - timeTick }
 
+-- updates Bombs to detonate them, then returns obstacles with updated softblocks
 updateBombDetonate :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
 updateBombDetonate obs bombs = foldl processOneBomb ([], obs) bombs
   where
     processOneBomb (accBombs, accObs) bomb =
       if isDetonated bomb == Ticking && timer bomb <= 0
+        then let (newBombs, newObs) = detonateBomb accObs bomb
+             in (accBombs ++ newBombs, newObs)
+        else (accBombs ++ [bomb], accObs)
+
+-- updates Bombs detonation if hit by Detonating bomb
+updateBombBombDetonation :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
+updateBombBombDetonation obs bombs = foldl processOneBomb ([], obs) bombs
+  where
+    processOneBomb (accBombs, accObs) bomb =
+      if any (checkBombBombCollision bomb) accBombs
         then let (newBombs, newObs) = detonateBomb accObs bomb
              in (accBombs ++ newBombs, newObs)
         else (accBombs ++ [bomb], accObs)
@@ -598,18 +615,21 @@ updateGameState keys gs =
         (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles gs) updatedBombs'
         -- detonate depleted bomb timers and destroy appropriate softblocks
         
-        updatedBombs''' = updateBombRemoval updatedBombs'' -- remove detonated bombs
+        (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
+        -- detonate bombs that touched by other detonated bombs
+
+        updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
 
         -- Check if player collides with any detonating bomb
-        collision = any (checkCollision updatedPlayer') updatedBombs'''
+        collision = any (checkCollision updatedPlayer') updatedBombs''''
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
         
     in gs
       { player = updatedPlayer'
-      , bombs = updatedBombs'''
-      , obstacles = updatedObstacles
+      , bombs = updatedBombs''''
+      , obstacles = updatedObstacles'
       , score = newScore
       , gameOver = collision  -- Game ends on collision
       }
@@ -822,17 +842,17 @@ main = mainWidget $ do
                 " | timer: " <> pack (show $ timer b)
       
       -- Display obstacles state
-      el "div" $ do
-        el "h4" $ text "Obstacles:"
-        dyn_ $ ffor gameState $ \gs ->
-          el "div" $ do
-            forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
-              el "div" $ text $
-                "Obstacle " <> pack (show (i :: Int)) <> ": " <>
-                "X: " <> pack (show $ obstacleX obs) <> 
-                " | Y: " <> pack (show $ obstacleY obs) <> 
-                " | Width: " <> pack (show $ obstacleWidth obs) <> 
-                " | Height: " <> pack (show $ obstacleHeight obs) <>
-                " | isHard: " <> pack (show $ isHardBlock obs)
+      --el "div" $ do
+        --el "h4" $ text "Obstacles:"
+        --dyn_ $ ffor gameState $ \gs ->
+          --el "div" $ do
+            --forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
+              --el "div" $ text $
+                --"Obstacle " <> pack (show (i :: Int)) <> ": " <>
+                --"X: " <> pack (show $ obstacleX obs) <> 
+                --" | Y: " <> pack (show $ obstacleY obs) <> 
+                --" | Width: " <> pack (show $ obstacleWidth obs) <> 
+                --" | Height: " <> pack (show $ obstacleHeight obs) <>
+                --" | isHard: " <> pack (show $ isHardBlock obs)
     
     return ()
