@@ -362,6 +362,30 @@ checkBombObstacleCollision b obs =
   in bRight > oLeft && bLeft < oRight &&
      bBottom > oTop && bTop < oBottom
 
+-- Check if bomb collides with an obstacle
+checkBombBombCollision :: Bomb -> Bomb -> Bool
+checkBombBombCollision b ob =
+  let bx = bombX b
+      by = bombY b
+      bs = bombSize b
+      ox = obstacleX ob
+      oy = obstacleY ob
+      ow = obstacleWidth ob
+      oh = obstacleHeight ob
+      
+      bLeft = bx - bs / 2
+      bRight = bx + bs / 2
+      bTop = by - bs / 2
+      bBottom = by + bs / 2
+      
+      oLeft = ox - ow / 2
+      oRight = ox + ow / 2
+      oTop = oy - oh / 2
+      oBottom = oy + oh / 2
+      
+  in bRight > oLeft && bLeft < oRight &&
+     bBottom > oTop && bTop < oBottom
+
 -- spawns a bomb and checks for collisions
 -- returns a (new bomb, success signal) to be added to the list
 updateBomb :: Map.Map Word () -> Player -> [Bomb] -> ([Bomb], Bool)
