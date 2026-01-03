@@ -214,7 +214,16 @@ initialGameState = GameState
       , Obstacle 425 525 cellSize cellSize True 
       , Obstacle 525 525 cellSize cellSize True 
       , Obstacle 625 525 cellSize cellSize True
-      , Obstacle 75 575 cellSize cellSize False -- Arbitrary Soft Blocks
+      , Obstacle 75 575 cellSize cellSize False -- 10 Arbitrary Soft Blocks
+      , Obstacle 175 175 cellSize cellSize False
+      , Obstacle 375 275 cellSize cellSize False
+      , Obstacle 575 375 cellSize cellSize False
+      , Obstacle 525 275 cellSize cellSize False
+      , Obstacle 375 525 cellSize cellSize False
+      , Obstacle 625 475 cellSize cellSize False
+      , Obstacle 675 575 cellSize cellSize False
+      , Obstacle 75 175 cellSize cellSize False
+      , Obstacle 625 575 cellSize cellSize False
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
@@ -391,7 +400,7 @@ updateBombTimer :: Bomb -> Bomb
 updateBombTimer b =
   let -- decrement bomb timer by 0.16 seconds every function call
     oldTime = timer b
-    timeTick = 0.16
+    timeTick = 0.08
     bDS = isDetonated b
   
   in if oldTime <= 0 -- if time is up, detonate
@@ -703,7 +712,7 @@ main = mainWidget $ do
     now <- liftIO getCurrentTime
     
     -- Create a tick event that fires ~60 times per second (every 0.016 seconds)
-    tick <- tickLossy (0.16 :: NominalDiffTime) now
+    tick <- tickLossy (0.08 :: NominalDiffTime) now
     
     -- ========================================================================
     -- GAME STATE UPDATES
