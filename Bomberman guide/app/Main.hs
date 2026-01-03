@@ -652,6 +652,14 @@ updateGameState keys gs =
       , gameTimer = gameTimer'
       }
 
+-- Convert game state timer from ss to mm::ss
+-- displayTimer :: GameState -> String
+-- displayTimer gs = if gt >= 60 then "Time Left: " ++ (show m) ++ ":" (show s) else "Time Left: " ++ (show $ round $ gt)
+--   where
+--     gt = gameTimer gs
+--     m = (round gt) div 60
+--     s = (round gt) mod 60
+
 -- Clamp a value between a minimum and maximum
 -- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
 clamp :: Ord a => a -> a -> a -> a
@@ -710,7 +718,7 @@ drawGame ctx gs = do
   -- Draw the score text in the top-left corner
   setFillStyle ctx (toJSString ("rgb(255, 255, 255)" :: String))  -- White
   setFont ctx (toJSString ("20px Arial" :: String))  -- 20pt Arial font
-  fillText ctx (toJSString ("Time left: " ++ show intTimer ++ "s" :: String)) 
+  fillText ctx (toJSString ("Time left: " ++ show intTimer ++ "s" :: String))  
                10           -- X position
                30           -- Y position
                (Nothing :: Maybe Float)  -- No maximum width
