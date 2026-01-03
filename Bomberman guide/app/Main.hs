@@ -74,6 +74,7 @@ data GameState = GameState
   , obstacles :: [Obstacle] -- List of solid obstacle blocks
   , score :: Int          -- Current score
   , gameOver :: Bool      -- Whether the game has ended
+  , gameTimer :: Float    -- float timer for the game
   } deriving (Show)
 
 -- Bomb represents a red square that can detonate into player-hurting red squares
@@ -227,6 +228,7 @@ initialGameState = GameState
       ]
   , score = 0       -- Start with 0 points
   , gameOver = False -- Game starts running
+  , gameTimer = 60    -- 60 seconds
   }
 
 -- ============================================================================
@@ -599,6 +601,15 @@ checkCollision p b =
      pBottom > bTop && pTop < bBottom     -- Y axis overlap
      && (isDetonated b == Detonating)
 
+--Update game timer
+updateGameTimer :: GameState -> Float
+updateGameTimer gs =
+  let
+    oldTime = gameTimer gs
+    tick = 0.08
+  in
+    oldTime - tick
+
 -- Update the entire game state each frame
 updateGameState :: Map.Map Word () -> GameState -> GameState
 updateGameState keys gs = 
@@ -625,13 +636,20 @@ updateGameState keys gs =
         
         -- Increment score each frame if still alive
         newScore = if collision then score gs else score gs + 1
+
+        -- Decrement Timer
+        gameTimer' = if collision then gameTimer gs else updateGameTimer gs
+
+        -- Check for Game Over
+        gameOver' = if collision || gameTimer' <= 0 then True else False
         
     in gs
       { player = updatedPlayer'
       , bombs = updatedBombs''''
       , obstacles = updatedObstacles'
       , score = newScore
-      , gameOver = collision  -- Game ends on collision
+      , gameOver = gameOver'
+      , gameTimer = gameTimer'
       }
 
 -- Clamp a value between a minimum and maximum
@@ -672,6 +690,7 @@ drawGame ctx gs = do
     then setFillStyle ctx (toJSString ("rgb(100, 100, 100)" :: String))  -- Gray if dead
     else setFillStyle ctx (toJSString ("rgb(100, 200, 255)" :: String))  -- Light blue if alive
   let p = player gs
+  let intTimer = round $ gameTimer gs
   -- Draw square centered on player position
   fillRect ctx (playerX p - playerSize p / 2)   -- Top-left X
                (playerY p - playerSize p / 2)   -- Top-left Y
@@ -691,7 +710,7 @@ drawGame ctx gs = do
   -- Draw the score text in the top-left corner
   setFillStyle ctx (toJSString ("rgb(255, 255, 255)" :: String))  -- White
   setFont ctx (toJSString ("20px Arial" :: String))  -- 20pt Arial font
-  fillText ctx (toJSString ("Score: " ++ show (score gs) :: String)) 
+  fillText ctx (toJSString ("Time left: " ++ show intTimer ++ "s" :: String)) 
                10           -- X position
                30           -- Y position
                (Nothing :: Maybe Float)  -- No maximum width
@@ -806,7 +825,7 @@ main = mainWidget $ do
       -- Display current game state values
       el "div" $ do
         dynText $ ffor gameState $ \gs -> 
-          "Game Over: " <> (if gameOver gs then "TRUE" else "FALSE") <> " | Score: " <> pack (show $ score gs)
+          "Game Over: " <> (if gameOver gs then "TRUE" else "FALSE") <> " | Score: " <> pack (show $ score gs) <> " | Timer: " <> pack (show $ round $ gameTimer gs)
       
       -- Display player state
       el "div" $ do

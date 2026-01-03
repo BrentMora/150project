@@ -96,12 +96,12 @@ getSysconfDir :: IO FilePath
 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
-bindir     = "/home/bomorales/.cabal/bin"
-libdir     = "/home/bomorales/.cabal/lib/javascript-ghcjs-ghc-9.10.0.20240413-inplace/Bomberman-guide-0.1.0.0-inplace-Bomberman-guide"
-dynlibdir  = "/home/bomorales/.cabal/lib/javascript-ghcjs-ghc-9.10.0.20240413-inplace"
-datadir    = "/home/bomorales/.cabal/share/javascript-ghcjs-ghc-9.10.0.20240413-inplace/Bomberman-guide-0.1.0.0"
-libexecdir = "/home/bomorales/.cabal/libexec/javascript-ghcjs-ghc-9.10.0.20240413-inplace/Bomberman-guide-0.1.0.0"
-sysconfdir = "/home/bomorales/.cabal/etc"
+bindir     = "/home/annik/.cabal/bin"
+libdir     = "/home/annik/.cabal/lib/javascript-ghcjs-ghc-9.10.0.20240413-inplace/Bomberman-guide-0.1.0.0-inplace-Bomberman-guide"
+dynlibdir  = "/home/annik/.cabal/lib/javascript-ghcjs-ghc-9.10.0.20240413-inplace"
+datadir    = "/home/annik/.cabal/share/javascript-ghcjs-ghc-9.10.0.20240413-inplace/Bomberman-guide-0.1.0.0"
+libexecdir = "/home/annik/.cabal/libexec/javascript-ghcjs-ghc-9.10.0.20240413-inplace/Bomberman-guide-0.1.0.0"
+sysconfdir = "/home/annik/.cabal/etc"
 
 getBinDir     = catchIO (getEnv "Bomberman_guide_bindir")     (\_ -> return bindir)
 getLibDir     = catchIO (getEnv "Bomberman_guide_libdir")     (\_ -> return libdir)

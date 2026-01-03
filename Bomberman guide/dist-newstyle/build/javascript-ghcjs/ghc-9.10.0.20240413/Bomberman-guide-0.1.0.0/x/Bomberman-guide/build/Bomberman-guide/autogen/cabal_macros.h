@@ -131,55 +131,55 @@
   (major1) == 3 && (major2) <  1 || \
   (major1) == 3 && (major2) == 1 && (minor) <= 57)
 #endif /* MIN_TOOL_VERSION_gpp */
-/* tool haddock-2.31.0 */
+/* tool haddock-2.29.2 */
 #ifndef TOOL_VERSION_haddock
-#define TOOL_VERSION_haddock "2.31.0"
+#define TOOL_VERSION_haddock "2.29.2"
 #endif /* TOOL_VERSION_haddock */
 #ifndef MIN_TOOL_VERSION_haddock
 #define MIN_TOOL_VERSION_haddock(major1,major2,minor) (\
   (major1) <  2 || \
-  (major1) == 2 && (major2) <  31 || \
-  (major1) == 2 && (major2) == 31 && (minor) <= 0)
+  (major1) == 2 && (major2) <  29 || \
+  (major1) == 2 && (major2) == 29 && (minor) <= 2)
 #endif /* MIN_TOOL_VERSION_haddock */
-/* tool hpc-0.69 */
+/* tool hpc-0.68 */
 #ifndef TOOL_VERSION_hpc
-#define TOOL_VERSION_hpc "0.69"
+#define TOOL_VERSION_hpc "0.68"
 #endif /* TOOL_VERSION_hpc */
 #ifndef MIN_TOOL_VERSION_hpc
 #define MIN_TOOL_VERSION_hpc(major1,major2,minor) (\
   (major1) <  0 || \
-  (major1) == 0 && (major2) <  69 || \
-  (major1) == 0 && (major2) == 69 && (minor) <= 0)
+  (major1) == 0 && (major2) <  68 || \
+  (major1) == 0 && (major2) == 68 && (minor) <= 0)
 #endif /* MIN_TOOL_VERSION_hpc */
-/* tool pkg-config-1.8.1 */
+/* tool pkg-config-2.5.1 */
 #ifndef TOOL_VERSION_pkg_config
-#define TOOL_VERSION_pkg_config "1.8.1"
+#define TOOL_VERSION_pkg_config "2.5.1"
 #endif /* TOOL_VERSION_pkg_config */
 #ifndef MIN_TOOL_VERSION_pkg_config
 #define MIN_TOOL_VERSION_pkg_config(major1,major2,minor) (\
-  (major1) <  1 || \
-  (major1) == 1 && (major2) <  8 || \
-  (major1) == 1 && (major2) == 8 && (minor) <= 1)
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  5 || \
+  (major1) == 2 && (major2) == 5 && (minor) <= 1)
 #endif /* MIN_TOOL_VERSION_pkg_config */
-/* tool runghc-9.10.2 */
+/* tool runghc-9.6.7 */
 #ifndef TOOL_VERSION_runghc
-#define TOOL_VERSION_runghc "9.10.2"
+#define TOOL_VERSION_runghc "9.6.7"
 #endif /* TOOL_VERSION_runghc */
 #ifndef MIN_TOOL_VERSION_runghc
 #define MIN_TOOL_VERSION_runghc(major1,major2,minor) (\
   (major1) <  9 || \
-  (major1) == 9 && (major2) <  10 || \
-  (major1) == 9 && (major2) == 10 && (minor) <= 2)
+  (major1) == 9 && (major2) <  6 || \
+  (major1) == 9 && (major2) == 6 && (minor) <= 7)
 #endif /* MIN_TOOL_VERSION_runghc */
-/* tool strip-2.44 */
+/* tool strip-2.42 */
 #ifndef TOOL_VERSION_strip
-#define TOOL_VERSION_strip "2.44"
+#define TOOL_VERSION_strip "2.42"
 #endif /* TOOL_VERSION_strip */
 #ifndef MIN_TOOL_VERSION_strip
 #define MIN_TOOL_VERSION_strip(major1,major2,minor) (\
   (major1) <  2 || \
-  (major1) == 2 && (major2) <  44 || \
-  (major1) == 2 && (major2) == 44 && (minor) <= 0)
+  (major1) == 2 && (major2) <  42 || \
+  (major1) == 2 && (major2) == 42 && (minor) <= 0)
 #endif /* MIN_TOOL_VERSION_strip */
 
 #ifndef CURRENT_COMPONENT_ID
