@@ -303,7 +303,7 @@ updatePlayer keys obstacles p =
      then p  -- Don't move if it would hit an obstacle
      else testPlayer  -- Move to new position if clear
   where
-    speed = 5
+    speed = 9
 
     -- Horizontal intent
     vxRaw
@@ -407,17 +407,18 @@ updateBombTimer b =
       b { timer = oldTime - timeTick }
 
 
-updateBombDetonate :: [Bomb] -> [Bomb]
-updateBombDetonate bombs =
-  concatMap update bombs
+updateBombDetonate :: [Obstacle] -> [Bomb] -> [Bomb]
+updateBombDetonate obs bombs =
+  concatMap (update obs) bombs
   where
-    update b
+    update obs b
       | isDetonated b == Ticking
-        && timer b <= 0 = detonateBomb b
+        && timer b <= 0
+        = detonateBomb obs b
       | otherwise     = [b]
 
-detonateBomb :: Bomb -> [Bomb]
-detonateBomb b =
+detonateBomb :: [Obstacle] -> Bomb -> [Bomb]
+detonateBomb obs b =
   let
     bX = bombX b
     bY = bombY b 
@@ -461,8 +462,14 @@ detonateBomb b =
       , isDetonated = Detonating
       , timer = 1
     }
+
+    testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
   
-  in [newBombUp, newBombDown, newBombLeft, newBombRight, b]
+  in
+    filter isNotColliding testBombs
+    where
+      isNotColliding b =
+        not $ any (checkEnemyObstacleCollision b) obs
 
 updateBombRemoval :: [Bomb] -> [Bomb]
 updateBombRemoval bombs =
@@ -549,7 +556,7 @@ updateGameState keys gs =
         updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bomb updating
         
         updatedBombs' = map updateBombTimer updatedBombs
-        updatedBombs'' = updateBombDetonate updatedBombs'
+        updatedBombs'' = updateBombDetonate (obstacles gs) updatedBombs'
         updatedBombs''' = updateBombRemoval updatedBombs''
 
         -- Check if player collides with any enemy
