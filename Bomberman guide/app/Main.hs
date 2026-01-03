@@ -82,7 +82,7 @@ data Bomb = Bomb
   , bombY :: Float       -- Y position
   , bombVelX :: Float    -- X velocity (horizontal speed)
   , bombVelY :: Float    -- Y velocity (vertical speed)
-  , bombSize :: Float    -- Size of the enemy square
+  , bombSize :: Float    -- Size of the bomb square
   , isDetonated :: DetonationStatus  -- boolean to track detonating status
   , timer :: Float       -- float timer that ticks down to detonation
   } deriving (Show)
@@ -128,8 +128,8 @@ initialGameState :: GameState
 initialGameState = GameState
   { player = initialPlayer
   , bombs = 
-      [ Bomb 75 75 0 0 50 Ticking 3       -- First enemy: top-left, moving right-down, size 25
-      , Bomb 575 575 0 0 50 Ticking 3    -- Second enemy: bottom-right, moving left-up, size 25
+      [ Bomb 75 75 0 0 50 Ticking 3       -- First bomb: top-left, moving right-down, size 25
+      , Bomb 575 575 0 0 50 Ticking 3    -- Second bomb: bottom-right, moving left-up, size 25
       ]
   , obstacles =
       [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
@@ -338,7 +338,7 @@ computeTarget :: Float -> [Float] -> Float
 computeTarget pXY =
   minimumBy (\a b -> compare (abs (pXY - a)) (abs (pXY - b)))
 
--- Check if enemy collides with an obstacle (for bouncing)
+-- Check if bomb collides with an obstacle
 checkBombObstacleCollision :: Bomb -> Obstacle -> Bool
 checkBombObstacleCollision b obs =
   let bx = bombX b
@@ -362,8 +362,8 @@ checkBombObstacleCollision b obs =
   in bRight > oLeft && bLeft < oRight &&
      bBottom > oTop && bTop < oBottom
 
--- new updateEnemy -> spawns a bomb and checks for collisions
--- returns a new bomb to be added to the list
+-- spawns a bomb and checks for collisions
+-- returns a (new bomb, success signal) to be added to the list
 updateBomb :: Map.Map Word () -> Player -> [Bomb] -> ([Bomb], Bool)
 updateBomb keys p bombs =
   let -- set new bomb attributes
@@ -415,18 +415,17 @@ updateBombTimer b =
     else 
       b { timer = oldTime - timeTick }
 
-
-updateBombDetonate :: [Obstacle] -> [Bomb] -> [Bomb]
-updateBombDetonate obs bombs =
-  concatMap (update obs) bombs
+updateBombDetonate :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
+updateBombDetonate obs bombs = foldl processOneBomb ([], obs) bombs
   where
-    update obs b
-      | isDetonated b == Ticking
-        && timer b <= 0
-        = detonateBomb obs b
-      | otherwise     = [b]
+    processOneBomb (accBombs, accObs) bomb =
+      if isDetonated bomb == Ticking && timer bomb <= 0
+        then let (newBombs, newObs) = detonateBomb accObs bomb
+             in (accBombs ++ newBombs, newObs)
+        else (accBombs ++ [bomb], accObs)
 
-detonateBomb :: [Obstacle] -> Bomb -> [Bomb]
+-- returns new bomb state and new obstacle state (those that should be destroyed)
+detonateBomb :: [Obstacle] -> Bomb -> ([Bomb], [Obstacle])
 detonateBomb obs b =
   let
     bX = bombX b
@@ -473,12 +472,19 @@ detonateBomb obs b =
     }
 
     testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
-  
+
+    isNotColliding bomb = not $ any (checkBombObstacleCollision bomb) obs
+    
+    obstaclesNotColliding o =
+      isHardBlock o
+      || -- does not overlap with any of the newBombs
+      not (checkBombObstacleCollision newBombUp o)
+      && not (checkBombObstacleCollision newBombDown o)
+      && not (checkBombObstacleCollision newBombLeft o)
+      && not (checkBombObstacleCollision newBombRight o)
+
   in
-    filter isNotColliding testBombs
-    where
-      isNotColliding b =
-        not $ any (checkBombObstacleCollision b) obs
+    (filter isNotColliding testBombs, filter obstaclesNotColliding obs)
 
 updateBombRemoval :: [Bomb] -> [Bomb]
 updateBombRemoval bombs =
@@ -524,7 +530,7 @@ updateEnemy obstacles b =
        , bombVelY = finalVelY
        }
 
--- Check if two rectangles (player and enemy) are colliding
+-- Check if two rectangles (player and bomb) are colliding
 -- Uses AABB (Axis-Aligned Bounding Box) collision detection
 checkCollision :: Player -> Bomb -> Bool
 checkCollision p b = 
@@ -559,16 +565,18 @@ updateGameState keys gs =
   if gameOver gs 
   then gs
   else
-    let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player, checking obstacles
-        (updatedBombs, isBombAdded) = updateBomb keys updatedPlayer (bombs gs)  -- Update bombs
+    let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player position, checking obstacles
+        (updatedBombs, isBombAdded) = updateBomb keys updatedPlayer (bombs gs)  -- Update bombs (placing bombs)
 
-        updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bomb updating
+        updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
         
-        updatedBombs' = map updateBombTimer updatedBombs
-        updatedBombs'' = updateBombDetonate (obstacles gs) updatedBombs'
-        updatedBombs''' = updateBombRemoval updatedBombs''
+        updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
+        (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles gs) updatedBombs'
+        -- detonate depleted bomb timers and destroy appropriate softblocks
+        
+        updatedBombs''' = updateBombRemoval updatedBombs'' -- remove detonated bombs
 
-        -- Check if player collides with any enemy
+        -- Check if player collides with any detonating bomb
         collision = any (checkCollision updatedPlayer') updatedBombs'''
         
         -- Increment score each frame if still alive
@@ -577,6 +585,7 @@ updateGameState keys gs =
     in gs
       { player = updatedPlayer'
       , bombs = updatedBombs'''
+      , obstacles = updatedObstacles
       , score = newScore
       , gameOver = collision  -- Game ends on collision
       }
@@ -627,7 +636,7 @@ drawGame ctx gs = do
   
   -- Draw all enemies as red squares
   setFillStyle ctx (toJSString ("rgb(255, 100, 100)" :: String))  -- Light red
-  -- Map over each enemy and draw it
+  -- Map over each bomb and draw it
   mapM_ (\b -> fillRect ctx 
                  (bombX b - bombSize b / 2)    -- Top-left X
                  (bombY b - bombSize b / 2)    -- Top-left Y
@@ -643,7 +652,7 @@ drawGame ctx gs = do
                30           -- Y position
                (Nothing :: Maybe Float)  -- No maximum width
   
-  -- Draw GAME OVER message if player hit an enemy
+  -- Draw GAME OVER message if player hit a detonating bomb
   if gameOver gs
     then do
       setFillStyle ctx (toJSString ("rgb(255, 50, 50)" :: String))  -- Bright red
@@ -667,8 +676,8 @@ main :: IO ()
 main = mainWidget $ do
   el "div" $ do
     -- Display title and instructions
-    el "h1" $ text "Haskell Canvas 2D Game Demo"
-    el "p" $ text "Use WASD or Arrow Keys to move the blue square. Avoid the red enemies!"
+    el "h1" $ text "Bomberman"
+    el "p" $ text "Use WASD or Arrow Keys to move the blue square. Avoid the red bombs!"
     
     -- Create the canvas element with attributes
     (canvasEl, _) <- elAttr' "canvas" 
@@ -789,17 +798,17 @@ main = mainWidget $ do
                 " | timer: " <> pack (show $ timer b)
       
       -- Display obstacles state
-      --el "div" $ do
-        --el "h4" $ text "Obstacles:"
-        --dyn_ $ ffor gameState $ \gs ->
-          --el "div" $ do
-            --forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
-              --el "div" $ text $
-                --"Obstacle " <> pack (show (i :: Int)) <> ": " <>
-                --"X: " <> pack (show $ obstacleX obs) <> 
-                --" | Y: " <> pack (show $ obstacleY obs) <> 
-                --" | Width: " <> pack (show $ obstacleWidth obs) <> 
-                --" | Height: " <> pack (show $ obstacleHeight obs) <>
-                --" | isHard: " <> pack (show $ isHardBlock obs)
+      el "div" $ do
+        el "h4" $ text "Obstacles:"
+        dyn_ $ ffor gameState $ \gs ->
+          el "div" $ do
+            forM_ (zip [1..] (obstacles gs)) $ \(i, obs) ->
+              el "div" $ text $
+                "Obstacle " <> pack (show (i :: Int)) <> ": " <>
+                "X: " <> pack (show $ obstacleX obs) <> 
+                " | Y: " <> pack (show $ obstacleY obs) <> 
+                " | Width: " <> pack (show $ obstacleWidth obs) <> 
+                " | Height: " <> pack (show $ obstacleHeight obs) <>
+                " | isHard: " <> pack (show $ isHardBlock obs)
     
     return ()
