@@ -339,8 +339,8 @@ computeTarget pXY =
   minimumBy (\a b -> compare (abs (pXY - a)) (abs (pXY - b)))
 
 -- Check if enemy collides with an obstacle (for bouncing)
-checkEnemyObstacleCollision :: Bomb -> Obstacle -> Bool
-checkEnemyObstacleCollision b obs =
+checkBombObstacleCollision :: Bomb -> Obstacle -> Bool
+checkBombObstacleCollision b obs =
   let bx = bombX b
       by = bombY b
       bs = bombSize b
@@ -478,7 +478,7 @@ detonateBomb obs b =
     filter isNotColliding testBombs
     where
       isNotColliding b =
-        not $ any (checkEnemyObstacleCollision b) obs
+        not $ any (checkBombObstacleCollision b) obs
 
 updateBombRemoval :: [Bomb] -> [Bomb]
 updateBombRemoval bombs =
@@ -504,7 +504,7 @@ updateEnemy obstacles b =
       testBomb = b { bombX = newX, bombY = newY }
       
       -- Check if new position would collide with obstacles
-      hitObstacle = any (checkEnemyObstacleCollision testBomb) obstacles
+      hitObstacle = any (checkBombObstacleCollision testBomb) obstacles
       
       -- Reverse velocity if hitting wall or obstacle
       finalVelX = if hitLeftWall || hitRightWall || hitObstacle 
