@@ -87,6 +87,7 @@ data Player = Player
   , spacePressed :: Bool  -- saves state, whether or not spacekey was pressed
   , xCoords :: [Double]    -- list of X coordinates for player to target
   , yCoords :: [Double]    -- list of Y coordinates for player to target
+  , currentDirection :: Maybe Direction    -- Currently pressed direction key (if any)
   } deriving (Show)
 
 -- Bomb represents a red square that can detonate into player-hurting red squares
@@ -119,7 +120,6 @@ data Model = Model                            -- Application state
   , obstacles :: [Obstacle]                   -- List of solid obstacle blocks
   , score :: Int                              -- Current score
   , gameOver :: Bool                          -- Whether the game has ended
-  , currentDirection :: Maybe Direction       -- Currently pressed direction key (if any)
   }
   deriving (Show, Eq)                         
 
@@ -146,6 +146,7 @@ initialPlayer = Player
   , yCoords = 
     [25, 75, 125, 175, 225, 275, 
     325, 375, 425, 475, 525, 575, 625]
+  , currentDirection = DirNone  -- not moving
   }
 
 
@@ -313,24 +314,17 @@ updatePlayerPlaceBomb keys isBA p =
       newBH = bombsHeld p - 1        -- new bombsHeld
       spaceState = spacePressed p    -- state of spacePressed
 
-      -- Create a test player with decremented bomb count and spacePressed as True
-      testPlayer = p { bombsHeld = newBH, spacePressed = True }
+      -- Create a test player with decremented bomb count
+      testPlayer = p { bombsHeld = newBH }
 
   in if oldBH > 0           -- if a bomb can be placed
-    && spaceState == False  -- if spacekey was released previously
-    && keyPress == 1        -- if spacekey is now pressed
+    && spaceState == True   -- if spacekey is being requested
     && isBA                 -- and bomb was successfully added
       then testPlayer       -- bomb can be placed
-    else if keyPress == 0   -- reset if spacekey was released
+    else if spaceState == False -- spacekeyis not requested so you can reset
       then p { spacePressed = False }
     else
-      p                     -- bomb cannot be placed
-  
-  where
-    keyPress = 
-      if Map.member 32 keys -- if backspace is pressed, decrement value is 1
-      then 1
-    else 0
+      p                     -- bomb cannot be placed, nothing should happen
 
 -- Update player position based on which keys are pressed
 -- Takes a Map of currently pressed keys and the current player state
@@ -339,6 +333,7 @@ updatePlayerPlaceBomb keys isBA p =
 updatePlayer :: Map.Map Word () -> [Obstacle] -> Player -> Player
 updatePlayer keys obstacles p = 
   let -- Calculate desired new position
+      dir = currentDirection p -- direction request
       newX = playerX p + vx
       newY = playerY p + vy
 
@@ -359,23 +354,24 @@ updatePlayer keys obstacles p =
   where
     speed = 9
 
-    -- Horizontal intent
-    vxRaw
-      | Map.member 37 keys || Map.member 65 keys = -speed  -- Left / A
-      | Map.member 39 keys || Map.member 68 keys =  speed  -- Right / D
-      | otherwise = 0
+    -- Horizontal cases
+    vx
+      if dir == Just DirLeft
+        then -speed
+      else if dir == Just DirRight
+        then speed
+      else 0
 
-    -- Vertical intent
-    vyRaw
+    -- Vertical cases
+    vy
       | Map.member 38 keys || Map.member 87 keys = -speed  -- Up / W
       | Map.member 40 keys || Map.member 83 keys =  speed  -- Down / S
       | otherwise = 0
-
-    -- Enforce orthogonal movement
-    (vx, vy)
-      | vxRaw /= 0 = (vxRaw, 0)   -- prioritize horizontal movement
-      | vyRaw /= 0 = (0, vyRaw)
-      | otherwise  = (0, 0)
+      if dir == Just DirUp
+        then -speed
+      else if dir == Just DirDown
+        then speed
+      else 0
 
 -- computes the nearest point for each coordinate
 -- takes in the coordinate of player and list of possible target coordinates
@@ -445,25 +441,20 @@ updateBomb keys p bombs =
     newBX =  targetX p 
     newBY = targetY p
     bombsH = bombsHeld p
-    spaceState = spacePressed p
+    spaceState = spacePressed p -- if space was requested
 
     newBomb = Bomb newBX newBY 0 0 cellSize Ticking 3
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
-  in if backPressed == 1    -- boolean variable to check if backspace is pressed
-    && bombsH > 0           -- bombs can be placed
-    && spaceState == False  -- spacekey was released
-    && checkIfBombExists newBomb bombs == False -- bomb does not already exist
+  in if
+    && bombsH > 0          -- if bombs can be placed
+    && spaceState == True  -- if spacekey was requested
+    && checkIfBombExists newBomb bombs == False -- if bomb does not already exist
     then (bombs ++ [newBomb], True) -- append newBomb to list of bombs, and signify success True
     else (bombs, False) -- returns Nothing if backspace not pressed
+    -- { spacePressed = False } not handled here because it is handled in updatePlayerPlaceBomb function
   
-  where
-    backPressed =
-      if Map.member 32 keys
-        then 1 
-      else 0
-
 checkIfBombExists :: Bomb -> [Bomb] -> Bool
 checkIfBombExists b bombs =
   any (\x -> 
@@ -475,7 +466,7 @@ updateBombTimer :: Bomb -> Bomb
 updateBombTimer b =
   let -- decrement bomb timer by 0.16 seconds every function call
     oldTime = timer b
-    timeTick = 0.08
+    timeTick = 0.16
     bDS = isDetonated b
   
   in if oldTime <= 0 -- if time is up, detonate
@@ -490,25 +481,27 @@ updateBombTimer b =
     else 
       b { timer = oldTime - timeTick }
 
--- updates Bombs to detonate them, then returns obstacles with updated softblocks
+-- updates Bombs to detonate them, then returns obstacles with updated softblocks (if softblocks were destroyed in the process)
 updateBombDetonate :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
 updateBombDetonate obs bombs = foldl processOneBomb ([], obs) bombs
+-- iterate to the left over all bombs, detonate one by one, check if softblocks were hit
   where
-    processOneBomb (accBombs, accObs) bomb =
-      if isDetonated bomb == Ticking && timer bomb <= 0
+    processOneBomb (accBombs, accObs) bomb =                -- accBombs -> accumulates bombs, accObs -> accumulates new Obstacles
+      if isDetonated bomb == Ticking && timer bomb <= 0     -- if bomb is Ticking and timer is up, then detonate
         then let (newBombs, newObs) = detonateBomb accObs bomb
              in (accBombs ++ newBombs, newObs)
-        else (accBombs ++ [bomb], accObs)
+        else (accBombs ++ [bomb], accObs)                   -- else, (bomb is not meant to be deontated) just add the original bomb
 
--- updates Bombs detonation if hit by Detonating bomb
+-- detonates Bombs if hit by Detonating bomb
 updateBombBombDetonation :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
 updateBombBombDetonation obs bombs = foldl processOneBomb ([], obs) bombs
+-- iterates to the left over all bombs, detonate if they are touched by detonating bombs
   where
     processOneBomb (accBombs, accObs) bomb =
-      if any (checkBombBombCollision bomb) accBombs
-        then let (newBombs, newObs) = detonateBomb accObs bomb
+      if any (checkBombBombCollision bomb) accBombs             -- if the bomb is touched by any detonating bomb
+        then let (newBombs, newObs) = detonateBomb accObs bomb  -- detonate the bomb
              in (accBombs ++ newBombs, newObs)
-        else (accBombs ++ [bomb], accObs)
+        else (accBombs ++ [bomb], accObs)                       -- else, do nothing
 
 -- returns new bomb state and new obstacle state (those that should be destroyed)
 detonateBomb :: [Obstacle] -> Bomb -> ([Bomb], [Obstacle])
@@ -516,6 +509,8 @@ detonateBomb obs b =
   let
     bX = bombX b
     bY = bombY b 
+
+    -- create four new bombs relative to source bomb's orthogonal dircetions
 
     newBombUp = Bomb { 
       bombX = bX
@@ -558,8 +553,10 @@ detonateBomb obs b =
     }
 
     testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
+    -- testBombs should include original bomb
 
     isNotColliding bomb = not $ any (checkBombObstacleCollision bomb) obs
+    -- isNotColliding checks if a new bomb will overlap with an obstacle
     
     obstaclesNotColliding o =
       isHardBlock o
@@ -568,53 +565,57 @@ detonateBomb obs b =
       && not (checkBombObstacleCollision newBombDown o)
       && not (checkBombObstacleCollision newBombLeft o)
       && not (checkBombObstacleCollision newBombRight o)
+    -- obstacleNotColliding checks for obstacles that are hard blocks or not colliding with newBombs
+    -- only softblocks that collided with the detonating bombs should be removed
 
   in
     (filter isNotColliding testBombs, filter obstaclesNotColliding obs)
+    -- filter base don the above conditions
 
+-- remove bombs that blew up
 updateBombRemoval :: [Bomb] -> [Bomb]
 updateBombRemoval bombs =
-  filter keep bombs
+  filter keep bombs -- filter out bombs that were detonating and reached the end of the detonating timer
   where
     keep b =
       not (isDetonated b == Detonating && timer b <= 0)
 
 -- Update a single enemy's position and handle wall and obstacle bouncing
-updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
-updateEnemy obstacles b = 
-  let -- Calculate new position
-      newX = bombX b + bombVelX b
-      newY = bombY b + bombVelY b
+-- updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
+-- updateEnemy obstacles b = 
+  -- let -- Calculate new position
+      -- newX = bombX b + bombVelX b
+      -- newY = bombY b + bombVelY b
       
       -- Check wall collisions
-      hitLeftWall = newX <= 0
-      hitRightWall = newX >= canvasWidth
-      hitTopWall = newY <= 0
-      hitBottomWall = newY >= canvasLength
+      -- hitLeftWall = newX <= 0
+      -- hitRightWall = newX >= canvasWidth
+      -- hitTopWall = newY <= 0
+      -- hitBottomWall = newY >= canvasLength
       
       -- Create test enemy at new position
-      testBomb = b { bombX = newX, bombY = newY }
+      -- testBomb = b { bombX = newX, bombY = newY }
       
       -- Check if new position would collide with obstacles
-      hitObstacle = any (checkBombObstacleCollision testBomb) obstacles
+      -- hitObstacle = any (checkBombObstacleCollision testBomb) obstacles
       
       -- Reverse velocity if hitting wall or obstacle
-      finalVelX = if hitLeftWall || hitRightWall || hitObstacle 
-                  then -(bombVelX b) 
-                  else bombVelX b
-      finalVelY = if hitTopWall || hitBottomWall || hitObstacle 
-                  then -(bombVelY b) 
-                  else bombVelY b
+      -- finalVelX = if hitLeftWall || hitRightWall || hitObstacle 
+                  -- then -(bombVelX b) 
+                  -- else bombVelX b
+      -- finalVelY = if hitTopWall || hitBottomWall || hitObstacle 
+                  -- then -(bombVelY b) 
+                  -- else bombVelY b
       
       -- Clamp position to stay in bounds
-      finalX = clamp 0 canvasWidth newX
-      finalY = clamp 0 canvasLength newY
+      -- finalX = clamp 0 canvasWidth newX
+      -- finalY = clamp 0 canvasLength newY
       
-  in b { bombX = finalX
-       , bombY = finalY
-       , bombVelX = finalVelX
-       , bombVelY = finalVelY
-       }
+  -- in b { bombX = finalX
+       -- , bombY = finalY
+       -- , bombVelX = finalVelX
+       -- , bombVelY = finalVelY
+       -- }
 
 -- Check if two rectangles (player and bomb) are colliding
 -- Uses AABB (Axis-Aligned Bounding Box) collision detection
@@ -642,7 +643,7 @@ checkCollision p b =
   in -- Rectangles collide if they overlap on both axes
      pRight > bLeft && pLeft < bRight &&  -- X axis overlap
      pBottom > bTop && pTop < bBottom     -- Y axis overlap
-     && (isDetonated b == Detonating)
+     && (isDetonated b == Detonating)     -- only if the bomb is detonating
 
 -- Clamp a value between a minimum and maximum
 -- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
@@ -672,26 +673,25 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let diff = if milli >= lastMilli then milli - lastMilli else 1000 - lastMilli + milli
   -- Calculate time delta, handling millisecond wraparound at 1000
   
-  let 
-    updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player position, checking obstacles
-    (updatedBombs, isBombAdded) = updateBomb keys updatedPlayer (bombs gs)  -- Update bombs (placing bombs)
+  let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player position, checking obstacles
+  let (updatedBombs, isBombAdded) = updateBomb keys updatedPlayer (bombs gs)  -- Update bombs (placing bombs)
 
-    updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
+  let updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
         
-    updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
-    (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles gs) updatedBombs'
+  let updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
+  let (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles gs) updatedBombs'
     -- detonate depleted bomb timers and destroy appropriate softblocks
         
-    (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
+  let (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
     -- detonate bombs that touched by other detonated bombs
 
-    updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
+  let updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
 
     -- Check if player collides with any detonating bomb
-    collision = any (checkCollision updatedPlayer') updatedBombs''''
+  let collision = any (checkCollision updatedPlayer') updatedBombs''''
         
     -- Increment score each frame if still alive
-    newScore = if collision then score gs else score gs + 1
+  let newScore = if collision then score gs else score gs + 1
   
   M.put $                                     -- Update the model with new state
     model
@@ -711,35 +711,43 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
 
 update MsgMoveUp = do                         -- Handle up arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model{currentDirection = Just DirUp}  -- Set current direction to up
+  M.put $ model { currentDirection = Just DirUp }  -- Set current direction to up
 
 ---
 
 update MsgMoveDown = do                       -- Handle down arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model{currentDirection = Just DirDown}  -- Set current direction to down
+  M.put $ model { currentDirection = Just DirDown }  -- Set current direction to down
 
 ---
 
 update MsgMoveLeft = do                       -- Handle left arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model{currentDirection = Just DirLeft}  -- Set current direction to left (not currently used in physics)
+  M.put $ model { currentDirection = Just DirLeft }  -- Set current direction to left (not currently used in physics)
 
 ---
 
 update MsgMoveRight = do                      -- Handle right arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model{currentDirection = Just DirRight}  -- Set current direction to right (not currently used in physics)
+  M.put $ model { currentDirection = Just DirRight }  -- Set current direction to right (not currently used in physics)
 
 ---
 
-update MsgPlaceBomb = do
+update MsgPlaceBomb = do                      -- Handle backspace
   model <- M.get
-  M.put $ model
+  let sp = spacePressed $ player $ model 
+  let model' =
+    if sp == False                            -- if spacePressed was released, then valid re-click
+      model { spacePressed = True }
+    else
+      model
+  M.put $ model'
 
 ---
 
-update MsgNoOp = pure ()                      -- Handle no-op message: do nothing
+update MsgNoOp = do                           -- Handle no-op message: do nothing
+  model <- M.get
+  M.put $ model { spacePressed = False }      -- reset spacePressed
 
 -- =========================
 -- View
@@ -762,10 +770,57 @@ view model =
 
 viewCanvas :: Model -> () -> Canvas.Canvas ()  -- Canvas rendering function
 viewCanvas model () = do
-  -- Black background; clears graphics of previous frame
-  Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
-  Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black (clears previous frame)
-  
-  -- Red box, 50x50
-  Canvas.fillStyle (Canvas.ColorArg (RGB 255 0 0))  -- Set fill color to red
-  Canvas.fillRect (model.x, model.y, squareSize, squareSize)  -- Draw square at current position
+  if model.gameOver
+
+    Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
+    Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black (clears previous frame)
+    -- TO DO
+
+  else
+
+    -- Black background; clears graphics of previous frame
+    Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
+    Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black (clears previous frame)
+
+    -- Blue box, 50x50
+    Canvas.fillStyle (Canvas.ColorArg (RGB 51 124 179))  -- Set fill color to blue
+
+    let px = model.player.playerX
+    let py = model.player.playerY
+    let ps = model.player.playerSize
+
+    Canvas.fillRect (px, py, ps, ps)  -- Draw square at current position
+
+    -- Draw hard blocks as dark gray blocks
+    -- Draw soft blocks as light gray blocks
+
+    mapM_ drawObstacles model.obstacles
+
+    -- draw bombs as red
+
+    mapM_ drawBombs model.bombs
+
+    where
+      drawObstacles :: Obstacle -> Canvas.Canvas () -- helper function to draw obstacles
+      drawObstacles obs =
+        do
+          if obs.isHard
+            then Canvas.fillStyle (Canvas.ColorArg (RGB 64 64 64))      -- dark gray
+            else Canvas.fillStyle (Canvas.ColorArg (RGB 192 192 192))   -- light gray
+            
+          Canvas.fillRect (
+            obs.obstacleX, obs.obstacleY
+            , obs.obstacleSize, obs.obstacleSize
+            )
+      
+      drawBombs :: Bomb -> Canvas.Canvas () -- helper function to draw bombs
+      drawBombs b =
+        do
+          if b.isDetonated == Ticking
+            then Canvas.fillStyle (Canvas.ColorArg (RGB 122 22 22))        -- dark red
+            else Canvas.fillStyle (Canvas.ColorArg (RGB 193 35 35))
+          
+          Canvas.fillRect (
+            b.bombX, b.bombY
+            , b.bombSize, b.bombSize
+            )
