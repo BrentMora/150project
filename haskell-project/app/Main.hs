@@ -54,16 +54,19 @@ main = M.run $ M.startApp app                 -- Entry point: starts the Miso ap
 
 handleKey :: IntSet -> Msg                    -- Converts keyboard key codes to messages
 handleKey intSet
-  | IntSet.member 37 intSet = MsgMoveLeft     -- Key code 37 = left arrow
-  | IntSet.member 38 intSet = MsgMoveUp       -- Key code 38 = up arrow
-  | IntSet.member 39 intSet = MsgMoveRight    -- Key code 39 = right arrow
-  | IntSet.member 40 intSet = MsgMoveDown     -- Key code 40 = down arrow
-  | IntSet.member 32 intSet = MsgPlaceBomb    -- Key code 32 = space bar
+  | IntSet.member 37 intSet = MsgKeyUpdate intSet
+  | IntSet.member 38 intSet = MsgKeyUpdate intSet    
+  | IntSet.member 39 intSet = MsgKeyUpdate intSet 
+  | IntSet.member 40 intSet = MsgKeyUpdate intSet     
+  | IntSet.member 32 intSet = MsgKeyUpdate intSet 
   | otherwise = MsgNoOp                       -- Any other key does nothing
 
 -- =========================
 -- Data
 -- =========================
+
+data Request = Valid | Blocked | Released
+  deriving (Show, Eq)
 
 data DetonationStatus = Ticking | Detonating | Done
   deriving (Show, Eq)
@@ -86,7 +89,7 @@ data Player = Player
   , bombsHeld :: Int      -- Number of bombs held
   , targetX :: Double      -- target is the target bomb placement with
   , targetY :: Double      -- X and Y coordinates
-  , spacePressed :: Bool  -- saves state, whether or not spacekey was pressed
+  , spaceRequest :: Request  -- saves state, whether or not spacekey was pressed
   , xCoords :: [Double]    -- list of X coordinates for player to target
   , yCoords :: [Double]    -- list of Y coordinates for player to target
   , currentDirection :: Maybe Direction    -- Currently pressed direction key (if any)
@@ -140,7 +143,7 @@ initialPlayer = Player
   , bombsHeld = 100         -- 1 bomb held by default
   , targetX = 375           -- same as player position
   , targetY = 575           -- same as player position
-  , spacePressed = False    -- spacekey is not pressed by default
+  , spaceRequest = Released    -- spacekey is not pressed by default
   , xCoords = 
     [25, 75, 125, 175, 225, 275, 
     325, 375, 425, 475, 525, 575, 
@@ -269,11 +272,7 @@ initModel =
 data Msg                                      
   = MsgGetTime                                -- Request current timestamp
   | MsgSetTime Double                         -- Receive timestamp and update animation
-  | MsgMoveUp                                 -- Up arrow pressed
-  | MsgMoveDown                               -- Down arrow pressed
-  | MsgMoveLeft                               -- Left arrow pressed
-  | MsgMoveRight                              -- Right arrow pressed
-  | MsgPlaceBomb                              -- Backspace pressed
+  | MsgKeyUpdate IntSet
   | MsgNoOp                                   -- No operation (ignored key)
   deriving (Show, Eq)                         -- Auto-generate Show and Eq instances
 
@@ -314,19 +313,17 @@ updatePlayerPlaceBomb isBA p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
       newBH = bombsHeld p - 1        -- new bombsHeld
-      spaceState = spacePressed p    -- state of spacePressed
+      spaceState = spaceRequest p    -- state of spaceRequest
 
       -- Create a test player with decremented bomb count
-      testPlayer = p { bombsHeld = newBH }
+      testPlayer = p { bombsHeld = newBH, spaceRequest = Blocked } -- block next tick if request succeeds
 
   in if oldBH > 0           -- if a bomb can be placed
-    && spaceState == True   -- if spacekey is being requested
+    && spaceState == Valid   -- if spacekey is being requested
     && isBA                 -- and bomb was successfully added
       then testPlayer       -- bomb can be placed
-    else if spaceState == False -- spacekeyis not requested so you can reset
-      then p { spacePressed = False }
     else
-      p                     -- bomb cannot be placed, nothing should happen
+      p
 
 -- Update player position based on which keys are pressed
 -- Takes a Map of currently pressed keys and the current player state
@@ -441,7 +438,7 @@ updateBomb p bombs =
     newBX =  targetX p 
     newBY = targetY p
     bombsH = bombsHeld p
-    spaceState = spacePressed p -- if space was requested
+    spaceState = spaceRequest p -- if space was requested
 
     newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3
     -- newBomb is a new bomb that has player coordinates and unmoving
@@ -449,11 +446,10 @@ updateBomb p bombs =
 
   in if
     bombsH > 0          -- if bombs can be placed
-    && spaceState == True  -- if spacekey was requested
+    && spaceState == Valid  -- if spacekey was requested
     && checkIfBombExists newBomb bombs == False -- if bomb does not already exist
     then (bombs ++ [newBomb], True) -- append newBomb to list of bombs, and signify success True
     else (bombs, False) -- returns Nothing if backspace not pressed
-    -- { spacePressed = False } not handled here because it is handled in updatePlayerPlaceBomb function
   
 checkIfBombExists :: Bomb -> [Bomb] -> Bool
 checkIfBombExists b bombs =
@@ -466,7 +462,7 @@ updateBombTimer :: Bomb -> Bomb
 updateBombTimer b =
   let -- decrement bomb timer by 0.16 seconds every function call
     oldTime = timer b
-    timeTick = 0.01
+    timeTick = 0.017
     bDS = isDetonated b
   
   in if oldTime <= 0 -- if time is up, detonate
@@ -708,57 +704,40 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
 
 ---
 
-update MsgMoveUp = do                         -- Handle up arrow key press
-  model <- M.get                              -- Get current model
-  let oldPlayer = model.player
-  let newPlayer = oldPlayer { currentDirection = Just DirUp }
-  M.put $ model { player = newPlayer }  -- Set current direction to up
-
----
-
-update MsgMoveDown = do                       -- Handle down arrow key press
-  model <- M.get                              -- Get current model
-  let oldPlayer = model.player
-  let newPlayer = oldPlayer { currentDirection = Just DirDown }
-  M.put $ model { player = newPlayer }  -- Set current direction to down
-
----
-
-update MsgMoveLeft = do                       -- Handle left arrow key press
-  model <- M.get                              -- Get current model
-  let oldPlayer = model.player
-  let newPlayer = oldPlayer { currentDirection = Just DirLeft }
-  M.put $ model { player = newPlayer }  -- Set current direction to left (not currently used in physics)
-
----
-
-update MsgMoveRight = do                      -- Handle right arrow key press
-  model <- M.get                              -- Get current model
-  let oldPlayer = model.player
-  let newPlayer = oldPlayer { currentDirection = Just DirRight }
-  M.put $ model { player = newPlayer }  -- Set current direction to right (not currently used in physics)
-
----
-
-update MsgPlaceBomb = do                      -- Handle backspace
+update (MsgKeyUpdate intSet) = do
   model <- M.get
   let oldPlayer = model.player
-  let sp = oldPlayer.spacePressed
-  let model' = if sp == False                 -- if spacePressed was released, then valid re-click
-      then 
-        let newPlayer = oldPlayer { spacePressed = True }
-        in model { player = newPlayer }
-                else  
-                    model
-  M.put $ model'
+
+  -- Direction handling
+
+  let newDir = if IntSet.member 38 intSet then Just DirUp
+               else if IntSet.member 40 intSet then Just DirDown
+               else if IntSet.member 37 intSet then Just DirLeft
+               else if IntSet.member 39 intSet then Just DirRight
+               else Just DirNone
+  
+  let isSpacePressed = IntSet.member 32 intSet
+  let isPrevTickRel = ( spaceRequest oldPlayer == Released )
+  let isPrevTickBlocked = ( spaceRequest oldPlayer == Blocked )
+
+  let newPlayer = oldPlayer {
+    currentDirection = newDir
+  }
+
+  let newPlayer' = if not ( isSpacePressed ) then newPlayer { spaceRequest = Released }
+                    else if isSpacePressed && isPrevTickRel  
+                        then newPlayer { spaceRequest = Valid } -- request comes through
+                    else newPlayer
+
+  M.put $ model { player = newPlayer' }
 
 ---
 
 update MsgNoOp = do                           -- Handle no-op message: do nothing
   model <- M.get
   let oldPlayer = model.player
-  let newPlayer = oldPlayer { currentDirection = Just DirNone, spacePressed = False }
-  M.put $ model { player = newPlayer }      -- reset spacePressed and direction
+  let newPlayer = oldPlayer { currentDirection = Just DirNone, spaceRequest = Released }
+  M.put $ model { player = newPlayer }      -- reset spaceRequest and direction
 
 -- =========================
 -- View
