@@ -466,7 +466,7 @@ updateBombTimer :: Bomb -> Bomb
 updateBombTimer b =
   let -- decrement bomb timer by 0.16 seconds every function call
     oldTime = timer b
-    timeTick = 0.17
+    timeTick = 0.01
     bDS = isDetonated b
   
   in if oldTime <= 0 -- if time is up, detonate
