@@ -4,7 +4,6 @@
 
 {-# LANGUAGE OverloadedRecordDot #-}  -- Allows dot notation for record fields (model.x instead of x model)
 {-# LANGUAGE OverloadedStrings #-}    -- Allows string literals to be polymorphic (useful for Text, etc.)
-{-# LANGUAGE NoFieldSelectors #-}     -- Prevents automatic generation of field selector functions to avoid name conflicts
 
 module Main where
 
@@ -19,6 +18,9 @@ import qualified Miso.Canvas as Canvas        -- Canvas API for drawing graphics
 import Data.IntSet (IntSet)                   -- Efficient set of integers
 import qualified Data.IntSet as IntSet        -- IntSet operations
 import Debug.Trace (trace)                    -- Debug tracing utility
+
+-- Other Imports
+import Data.List (minimumBy)
 
 -- =========================
 -- Constants
@@ -88,7 +90,7 @@ data Player = Player
   , xCoords :: [Double]    -- list of X coordinates for player to target
   , yCoords :: [Double]    -- list of Y coordinates for player to target
   , currentDirection :: Maybe Direction    -- Currently pressed direction key (if any)
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 -- Bomb represents a red square that can detonate into player-hurting red squares
 data Bomb = Bomb
@@ -99,7 +101,7 @@ data Bomb = Bomb
   , bombSize :: Double    -- Size of the bomb square
   , isDetonated :: DetonationStatus  -- boolean to track detonating status
   , timer :: Double       -- float timer that ticks down to detonation
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 -- Obstacle represents solid blocks that block movement
 data Obstacle = Obstacle
@@ -108,7 +110,7 @@ data Obstacle = Obstacle
   , obstacleWidth :: Double  -- Width of the obstacle
   , obstacleHeight :: Double -- Height of the obstacle
   , isHardBlock :: Bool      -- Type of the obstacle (Boolean bc there's only two)
-  } deriving (Show)
+  } deriving (Show, Eq)
 
 -- Gamestate
 data Model = Model                            -- Application state
@@ -146,7 +148,7 @@ initialPlayer = Player
   , yCoords = 
     [25, 75, 125, 175, 225, 275, 
     325, 375, 425, 475, 525, 575, 625]
-  , currentDirection = DirNone  -- not moving
+  , currentDirection = Just DirNone  -- not moving
   }
 
 
@@ -163,98 +165,98 @@ initModel =
       , Bomb 575 575 0 0 50 Ticking 3         -- Second bomb: bottom-right, moving left-up, size 25
       ]
     , obstacles =
-      [ Obstacle 25 25 cellSize cellSize  True -- Top Border hard blocks...
-      , Obstacle 75 25 cellSize cellSize  True  
-      , Obstacle 125 25 cellSize cellSize  True 
-      , Obstacle 175 25 cellSize cellSize  True 
-      , Obstacle 225 25 cellSize cellSize  True 
-      , Obstacle 275 25 cellSize cellSize  True 
-      , Obstacle 325 25 cellSize cellSize  True 
-      , Obstacle 375 25 cellSize cellSize  True 
-      , Obstacle 425 25 cellSize cellSize  True 
-      , Obstacle 475 25 cellSize cellSize  True 
-      , Obstacle 525 25 cellSize cellSize  True 
-      , Obstacle 575 25 cellSize cellSize  True 
-      , Obstacle 625 25 cellSize cellSize  True 
-      , Obstacle 675 25 cellSize cellSize  True 
-      , Obstacle 725 25 cellSize cellSize  True 
-      , Obstacle 25 75 cellSize cellSize  True -- Left Border Hard blocks ...
-      , Obstacle 25 125 cellSize cellSize  True 
-      , Obstacle 25 175 cellSize cellSize  True 
-      , Obstacle 25 225 cellSize cellSize  True 
-      , Obstacle 25 275 cellSize cellSize  True 
-      , Obstacle 25 325 cellSize cellSize  True 
-      , Obstacle 25 375 cellSize cellSize  True 
-      , Obstacle 25 425 cellSize cellSize  True 
-      , Obstacle 25 475 cellSize cellSize  True 
-      , Obstacle 25 525 cellSize cellSize  True 
-      , Obstacle 25 575 cellSize cellSize  True 
-      , Obstacle 25 625 cellSize cellSize  True 
-      , Obstacle 725 75 cellSize cellSize   True -- Right Border Hard Blocks 
-      , Obstacle 725 125 cellSize cellSize  True 
-      , Obstacle 725 175 cellSize cellSize  True 
-      , Obstacle 725 225 cellSize cellSize  True 
-      , Obstacle 725 275 cellSize cellSize  True 
-      , Obstacle 725 325 cellSize cellSize  True 
-      , Obstacle 725 375 cellSize cellSize  True 
-      , Obstacle 725 425 cellSize cellSize  True 
-      , Obstacle 725 475 cellSize cellSize  True 
-      , Obstacle 725 525 cellSize cellSize  True 
-      , Obstacle 725 575 cellSize cellSize  True 
-      , Obstacle 725 625 cellSize cellSize  True 
-      , Obstacle 75 625 cellSize cellSize   True  -- Bottom Border Blocks
-      , Obstacle 125 625 cellSize cellSize  True 
-      , Obstacle 175 625 cellSize cellSize  True 
-      , Obstacle 225 625 cellSize cellSize  True 
-      , Obstacle 275 625 cellSize cellSize  True 
-      , Obstacle 325 625 cellSize cellSize  True 
-      , Obstacle 375 625 cellSize cellSize  True 
-      , Obstacle 425 625 cellSize cellSize  True 
-      , Obstacle 475 625 cellSize cellSize  True 
-      , Obstacle 525 625 cellSize cellSize  True 
-      , Obstacle 575 625 cellSize cellSize  True 
-      , Obstacle 625 625 cellSize cellSize  True 
-      , Obstacle 675 625 cellSize cellSize  True 
-      , Obstacle 125 125 cellSize cellSize True -- First row blocks => 125 Y height (index 52) (made it soft blocks first so easily distinguishable)
-      , Obstacle 225 125 cellSize cellSize True 
-      , Obstacle 325 125 cellSize cellSize True 
-      , Obstacle 425 125 cellSize cellSize True 
-      , Obstacle 525 125 cellSize cellSize True 
-      , Obstacle 625 125 cellSize cellSize True 
-      , Obstacle 125 225 cellSize cellSize True -- Second row blocks => 225 Y height
-      , Obstacle 225 225 cellSize cellSize True 
-      , Obstacle 325 225 cellSize cellSize True 
-      , Obstacle 425 225 cellSize cellSize True 
-      , Obstacle 525 225 cellSize cellSize True 
-      , Obstacle 625 225 cellSize cellSize True 
-      , Obstacle 125 325 cellSize cellSize True -- Third row blocks => 325 Y height
-      , Obstacle 225 325 cellSize cellSize True 
-      , Obstacle 325 325 cellSize cellSize True 
-      , Obstacle 425 325 cellSize cellSize True 
-      , Obstacle 525 325 cellSize cellSize True 
-      , Obstacle 625 325 cellSize cellSize True 
-      , Obstacle 125 425 cellSize cellSize True -- Fourth row blocks => 425 Y height
-      , Obstacle 225 425 cellSize cellSize True 
-      , Obstacle 325 425 cellSize cellSize True 
-      , Obstacle 425 425 cellSize cellSize True 
-      , Obstacle 525 425 cellSize cellSize True 
-      , Obstacle 625 425 cellSize cellSize True 
-      , Obstacle 125 525 cellSize cellSize True  -- Fifth row blocks => 525 Y height
-      , Obstacle 225 525 cellSize cellSize True 
-      , Obstacle 325 525 cellSize cellSize True 
-      , Obstacle 425 525 cellSize cellSize True 
-      , Obstacle 525 525 cellSize cellSize True 
-      , Obstacle 625 525 cellSize cellSize True
-      , Obstacle 75 575 cellSize cellSize False -- 10 Arbitrary Soft Blocks
-      , Obstacle 175 175 cellSize cellSize False
-      , Obstacle 375 275 cellSize cellSize False
-      , Obstacle 575 375 cellSize cellSize False
-      , Obstacle 525 275 cellSize cellSize False
-      , Obstacle 375 525 cellSize cellSize False
-      , Obstacle 625 475 cellSize cellSize False
-      , Obstacle 675 575 cellSize cellSize False
-      , Obstacle 75 175 cellSize cellSize False
-      , Obstacle 625 575 cellSize cellSize False
+      [ Obstacle 25 25 squareSize squareSize  True -- Top Border hard blocks...
+      , Obstacle 75 25 squareSize squareSize  True  
+      , Obstacle 125 25 squareSize squareSize  True 
+      , Obstacle 175 25 squareSize squareSize  True 
+      , Obstacle 225 25 squareSize squareSize  True 
+      , Obstacle 275 25 squareSize squareSize  True 
+      , Obstacle 325 25 squareSize squareSize  True 
+      , Obstacle 375 25 squareSize squareSize  True 
+      , Obstacle 425 25 squareSize squareSize  True 
+      , Obstacle 475 25 squareSize squareSize  True 
+      , Obstacle 525 25 squareSize squareSize  True 
+      , Obstacle 575 25 squareSize squareSize  True 
+      , Obstacle 625 25 squareSize squareSize  True 
+      , Obstacle 675 25 squareSize squareSize  True 
+      , Obstacle 725 25 squareSize squareSize  True 
+      , Obstacle 25 75 squareSize squareSize  True -- Left Border Hard blocks ...
+      , Obstacle 25 125 squareSize squareSize  True 
+      , Obstacle 25 175 squareSize squareSize  True 
+      , Obstacle 25 225 squareSize squareSize  True 
+      , Obstacle 25 275 squareSize squareSize  True 
+      , Obstacle 25 325 squareSize squareSize  True 
+      , Obstacle 25 375 squareSize squareSize  True 
+      , Obstacle 25 425 squareSize squareSize  True 
+      , Obstacle 25 475 squareSize squareSize  True 
+      , Obstacle 25 525 squareSize squareSize  True 
+      , Obstacle 25 575 squareSize squareSize  True 
+      , Obstacle 25 625 squareSize squareSize  True 
+      , Obstacle 725 75 squareSize squareSize   True -- Right Border Hard Blocks 
+      , Obstacle 725 125 squareSize squareSize  True 
+      , Obstacle 725 175 squareSize squareSize  True 
+      , Obstacle 725 225 squareSize squareSize  True 
+      , Obstacle 725 275 squareSize squareSize  True 
+      , Obstacle 725 325 squareSize squareSize  True 
+      , Obstacle 725 375 squareSize squareSize  True 
+      , Obstacle 725 425 squareSize squareSize  True 
+      , Obstacle 725 475 squareSize squareSize  True 
+      , Obstacle 725 525 squareSize squareSize  True 
+      , Obstacle 725 575 squareSize squareSize  True 
+      , Obstacle 725 625 squareSize squareSize  True 
+      , Obstacle 75 625 squareSize squareSize   True  -- Bottom Border Blocks
+      , Obstacle 125 625 squareSize squareSize  True 
+      , Obstacle 175 625 squareSize squareSize  True 
+      , Obstacle 225 625 squareSize squareSize  True 
+      , Obstacle 275 625 squareSize squareSize  True 
+      , Obstacle 325 625 squareSize squareSize  True 
+      , Obstacle 375 625 squareSize squareSize  True 
+      , Obstacle 425 625 squareSize squareSize  True 
+      , Obstacle 475 625 squareSize squareSize  True 
+      , Obstacle 525 625 squareSize squareSize  True 
+      , Obstacle 575 625 squareSize squareSize  True 
+      , Obstacle 625 625 squareSize squareSize  True 
+      , Obstacle 675 625 squareSize squareSize  True 
+      , Obstacle 125 125 squareSize squareSize True -- First row blocks => 125 Y height (index 52) (made it soft blocks first so easily distinguishable)
+      , Obstacle 225 125 squareSize squareSize True 
+      , Obstacle 325 125 squareSize squareSize True 
+      , Obstacle 425 125 squareSize squareSize True 
+      , Obstacle 525 125 squareSize squareSize True 
+      , Obstacle 625 125 squareSize squareSize True 
+      , Obstacle 125 225 squareSize squareSize True -- Second row blocks => 225 Y height
+      , Obstacle 225 225 squareSize squareSize True 
+      , Obstacle 325 225 squareSize squareSize True 
+      , Obstacle 425 225 squareSize squareSize True 
+      , Obstacle 525 225 squareSize squareSize True 
+      , Obstacle 625 225 squareSize squareSize True 
+      , Obstacle 125 325 squareSize squareSize True -- Third row blocks => 325 Y height
+      , Obstacle 225 325 squareSize squareSize True 
+      , Obstacle 325 325 squareSize squareSize True 
+      , Obstacle 425 325 squareSize squareSize True 
+      , Obstacle 525 325 squareSize squareSize True 
+      , Obstacle 625 325 squareSize squareSize True 
+      , Obstacle 125 425 squareSize squareSize True -- Fourth row blocks => 425 Y height
+      , Obstacle 225 425 squareSize squareSize True 
+      , Obstacle 325 425 squareSize squareSize True 
+      , Obstacle 425 425 squareSize squareSize True 
+      , Obstacle 525 425 squareSize squareSize True 
+      , Obstacle 625 425 squareSize squareSize True 
+      , Obstacle 125 525 squareSize squareSize True  -- Fifth row blocks => 525 Y height
+      , Obstacle 225 525 squareSize squareSize True 
+      , Obstacle 325 525 squareSize squareSize True 
+      , Obstacle 425 525 squareSize squareSize True 
+      , Obstacle 525 525 squareSize squareSize True 
+      , Obstacle 625 525 squareSize squareSize True
+      , Obstacle 75 575 squareSize squareSize False -- 10 Arbitrary Soft Blocks
+      , Obstacle 175 175 squareSize squareSize False
+      , Obstacle 375 275 squareSize squareSize False
+      , Obstacle 575 375 squareSize squareSize False
+      , Obstacle 525 275 squareSize squareSize False
+      , Obstacle 375 525 squareSize squareSize False
+      , Obstacle 625 475 squareSize squareSize False
+      , Obstacle 675 575 squareSize squareSize False
+      , Obstacle 75 175 squareSize squareSize False
+      , Obstacle 625 575 squareSize squareSize False
       ]
     , score = 0       -- Start with 0 points
     , gameOver = False -- Game starts running
@@ -307,8 +309,8 @@ checkPlayerObstacleCollision p obs =
 
 -- add bombsHeld updater as a separate function because it's not movement-related
 -- decrements bombsHeld by player -> checks if bomb placing is valid
-updatePlayerPlaceBomb :: Map.Map Word () -> Bool -> Player -> Player
-updatePlayerPlaceBomb keys isBA p =
+updatePlayerPlaceBomb :: Bool -> Player -> Player
+updatePlayerPlaceBomb isBA p =
   let -- get current bombsHeld
       oldBH = bombsHeld p
       newBH = bombsHeld p - 1        -- new bombsHeld
@@ -330,8 +332,8 @@ updatePlayerPlaceBomb keys isBA p =
 -- Takes a Map of currently pressed keys and the current player state
 -- Returns updated player state
 -- also updates player targeting
-updatePlayer :: Map.Map Word () -> [Obstacle] -> Player -> Player
-updatePlayer keys obstacles p = 
+updatePlayer :: [Obstacle] -> Player -> Player
+updatePlayer obstacles p = 
   let -- Calculate desired new position
       dir = currentDirection p -- direction request
       newX = playerX p + vx
@@ -342,36 +344,34 @@ updatePlayer keys obstacles p =
       newTargetY = computeTarget newY (yCoords p)
       
       -- Create a test player at the new position with new target
-      testPlayer = p { playerX = clamp 0 canvasWidth newX, playerY = clamp 0 canvasLength newY,
+      testPlayer = p { playerX = clamp 0 screenWidth newX, playerY = clamp 0 screenHeight newY,
                         targetX = newTargetX, targetY = newTargetY }
 
       -- Check if new position and new target would collide with any obstacle
       wouldCollide = any (checkPlayerObstacleCollision testPlayer) obstacles
+
+      speed = 5
+
+      -- Horizontal cases
+      vx =
+        if dir == Just DirLeft
+          then -speed
+        else if dir == Just DirRight
+          then speed
+        else 0
+
+      -- Vertical cases
+      vy = 
+        if dir == Just DirUp
+          then -speed
+        else if dir == Just DirDown
+          then speed
+        else 0
       
   in if wouldCollide
      then p  -- Don't move if it would hit an obstacle
      else testPlayer  -- Move to new position if clear
-  where
-    speed = 9
 
-    -- Horizontal cases
-    vx
-      if dir == Just DirLeft
-        then -speed
-      else if dir == Just DirRight
-        then speed
-      else 0
-
-    -- Vertical cases
-    vy
-      | Map.member 38 keys || Map.member 87 keys = -speed  -- Up / W
-      | Map.member 40 keys || Map.member 83 keys =  speed  -- Down / S
-      | otherwise = 0
-      if dir == Just DirUp
-        then -speed
-      else if dir == Just DirDown
-        then speed
-      else 0
 
 -- computes the nearest point for each coordinate
 -- takes in the coordinate of player and list of possible target coordinates
@@ -435,20 +435,20 @@ checkBombBombCollision b ob =
 
 -- spawns a bomb and checks for collisions
 -- returns a (new bomb, success signal) to be added to the list
-updateBomb :: Map.Map Word () -> Player -> [Bomb] -> ([Bomb], Bool)
-updateBomb keys p bombs =
+updateBomb :: Player -> [Bomb] -> ([Bomb], Bool)
+updateBomb p bombs =
   let -- set new bomb attributes
     newBX =  targetX p 
     newBY = targetY p
     bombsH = bombsHeld p
     spaceState = spacePressed p -- if space was requested
 
-    newBomb = Bomb newBX newBY 0 0 cellSize Ticking 3
+    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
   in if
-    && bombsH > 0          -- if bombs can be placed
+    bombsH > 0          -- if bombs can be placed
     && spaceState == True  -- if spacekey was requested
     && checkIfBombExists newBomb bombs == False -- if bomb does not already exist
     then (bombs ++ [newBomb], True) -- append newBomb to list of bombs, and signify success True
@@ -517,7 +517,7 @@ detonateBomb obs b =
       , bombY = bY - 50
       , bombVelX = 0
       , bombVelY = 0
-      , bombSize = cellSize
+      , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
      }
@@ -527,7 +527,7 @@ detonateBomb obs b =
       , bombY = bY + 50
       , bombVelX = 0
       , bombVelY = 0
-      , bombSize = cellSize
+      , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
     }
@@ -537,7 +537,7 @@ detonateBomb obs b =
       , bombY = bY
       , bombVelX = 0
       , bombVelY = 0
-      , bombSize = cellSize
+      , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
     }
@@ -547,7 +547,7 @@ detonateBomb obs b =
       , bombY = bY
       , bombVelX = 0
       , bombVelY = 0
-      , bombSize = cellSize
+      , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
     }
@@ -673,13 +673,13 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let diff = if milli >= lastMilli then milli - lastMilli else 1000 - lastMilli + milli
   -- Calculate time delta, handling millisecond wraparound at 1000
   
-  let updatedPlayer = updatePlayer keys (obstacles gs) (player gs)  -- Update player position, checking obstacles
-  let (updatedBombs, isBombAdded) = updateBomb keys updatedPlayer (bombs gs)  -- Update bombs (placing bombs)
+  let updatedPlayer = updatePlayer (obstacles model) (player model)  -- Update player position, checking obstacles
+  let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (bombs model)  -- Update bombs (placing bombs)
 
-  let updatedPlayer' = updatePlayerPlaceBomb keys isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
+  let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
         
   let updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
-  let (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles gs) updatedBombs'
+  let (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles model) updatedBombs'
     -- detonate depleted bomb timers and destroy appropriate softblocks
         
   let (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
@@ -691,7 +691,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let collision = any (checkCollision updatedPlayer') updatedBombs''''
         
     -- Increment score each frame if still alive
-  let newScore = if collision then score gs else score gs + 1
+  let newScore = if collision then score model else score model + 1
   
   M.put $                                     -- Update the model with new state
     model
@@ -703,7 +703,6 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       , obstacles = updatedObstacles'
       , score = newScore
       , gameOver = collision
-      , currentDirection = Just DirNone 
       }
   M.issue MsgGetTime                          -- Issue next frame request (continues animation loop)
 
@@ -711,43 +710,55 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
 
 update MsgMoveUp = do                         -- Handle up arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model { currentDirection = Just DirUp }  -- Set current direction to up
+  let oldPlayer = model.player
+  let newPlayer = oldPlayer { currentDirection = Just DirUp }
+  M.put $ model { player = newPlayer }  -- Set current direction to up
 
 ---
 
 update MsgMoveDown = do                       -- Handle down arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model { currentDirection = Just DirDown }  -- Set current direction to down
+  let oldPlayer = model.player
+  let newPlayer = oldPlayer { currentDirection = Just DirDown }
+  M.put $ model { player = newPlayer }  -- Set current direction to down
 
 ---
 
 update MsgMoveLeft = do                       -- Handle left arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model { currentDirection = Just DirLeft }  -- Set current direction to left (not currently used in physics)
+  let oldPlayer = model.player
+  let newPlayer = oldPlayer { currentDirection = Just DirLeft }
+  M.put $ model { player = newPlayer }  -- Set current direction to left (not currently used in physics)
 
 ---
 
 update MsgMoveRight = do                      -- Handle right arrow key press
   model <- M.get                              -- Get current model
-  M.put $ model { currentDirection = Just DirRight }  -- Set current direction to right (not currently used in physics)
+  let oldPlayer = model.player
+  let newPlayer = oldPlayer { currentDirection = Just DirRight }
+  M.put $ model { player = newPlayer }  -- Set current direction to right (not currently used in physics)
 
 ---
 
 update MsgPlaceBomb = do                      -- Handle backspace
   model <- M.get
-  let sp = spacePressed $ player $ model 
-  let model' =
-    if sp == False                            -- if spacePressed was released, then valid re-click
-      model { spacePressed = True }
-    else
-      model
+  let oldPlayer = model.player
+  let sp = oldPlayer.spacePressed
+  let model' = if sp == False                 -- if spacePressed was released, then valid re-click
+      then 
+        let newPlayer = oldPlayer { spacePressed = True }
+        in model { player = newPlayer }
+                else  
+                    model
   M.put $ model'
 
 ---
 
 update MsgNoOp = do                           -- Handle no-op message: do nothing
   model <- M.get
-  M.put $ model { spacePressed = False }      -- reset spacePressed
+  let oldPlayer = model.player
+  let newPlayer = oldPlayer { currentDirection = Just DirNone, spacePressed = False }
+  M.put $ model { player = newPlayer }      -- reset spacePressed and direction
 
 -- =========================
 -- View
@@ -758,7 +769,7 @@ view model =
   trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
-      [ H.textarea_ [P.rows_ "20", P.cols_ "40"] [M.text $ M.ms $ show model]  -- Textarea showing model state (debugging)
+      [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model]  -- Textarea showing model state (debugging)
       , H.br_ []                              -- Line break
       , Canvas.canvas                         -- Canvas element for drawing
           [ P.width_ (M.ms screenWidth)       -- Set canvas width attribute
@@ -771,56 +782,47 @@ view model =
 viewCanvas :: Model -> () -> Canvas.Canvas ()  -- Canvas rendering function
 viewCanvas model () = do
   if model.gameOver
-
-    Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
-    Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black (clears previous frame)
-    -- TO DO
-
-  else
-
+    then do 
+      Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
+      Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black
+      
+      -- Game Over message
+      Canvas.fillStyle (Canvas.ColorArg (RGB 255 0 0))  -- Red text
+      Canvas.font "48px Arial"                          -- Set font size and family
+      Canvas.textAlign Canvas.TextAlignCenter           -- Center the text
+      Canvas.fillText ("GAME OVER", (screenWidth / 2), (screenHeight / 2))  -- Draw text centered
+      
+  else do 
     -- Black background; clears graphics of previous frame
     Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
     Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black (clears previous frame)
-
-    -- Blue box, 50x50
+    
+    -- Draw obstacles first (so they appear behind player)
+    mapM_ drawObstacles model.obstacles
+    
+    -- Draw bombs
+    mapM_ drawBombs model.bombs
+    
+    -- Blue box, 50x50 (player - drawn last so it appears on top)
     Canvas.fillStyle (Canvas.ColorArg (RGB 51 124 179))  -- Set fill color to blue
-
     let px = model.player.playerX
     let py = model.player.playerY
     let ps = model.player.playerSize
-
     Canvas.fillRect (px, py, ps, ps)  -- Draw square at current position
-
-    -- Draw hard blocks as dark gray blocks
-    -- Draw soft blocks as light gray blocks
-
-    mapM_ drawObstacles model.obstacles
-
-    -- draw bombs as red
-
-    mapM_ drawBombs model.bombs
-
-    where
-      drawObstacles :: Obstacle -> Canvas.Canvas () -- helper function to draw obstacles
-      drawObstacles obs =
-        do
-          if obs.isHard
-            then Canvas.fillStyle (Canvas.ColorArg (RGB 64 64 64))      -- dark gray
-            else Canvas.fillStyle (Canvas.ColorArg (RGB 192 192 192))   -- light gray
-            
-          Canvas.fillRect (
-            obs.obstacleX, obs.obstacleY
-            , obs.obstacleSize, obs.obstacleSize
-            )
+    
+  where
+    drawObstacles :: Obstacle -> Canvas.Canvas () -- helper function to draw obstacles
+    drawObstacles obs = do
+      if obs.isHardBlock
+        then Canvas.fillStyle (Canvas.ColorArg (RGB 64 64 64))      -- dark gray
+        else Canvas.fillStyle (Canvas.ColorArg (RGB 192 192 192))   -- light gray
+        
+      Canvas.fillRect (obs.obstacleX, obs.obstacleY, squareSize, squareSize)
+    
+    drawBombs :: Bomb -> Canvas.Canvas () -- helper function to draw bombs
+    drawBombs b = do
+      if b.isDetonated == Ticking
+        then Canvas.fillStyle (Canvas.ColorArg (RGB 122 22 22))        -- dark red
+        else Canvas.fillStyle (Canvas.ColorArg (RGB 193 35 35))        -- brighter red for detonating
       
-      drawBombs :: Bomb -> Canvas.Canvas () -- helper function to draw bombs
-      drawBombs b =
-        do
-          if b.isDetonated == Ticking
-            then Canvas.fillStyle (Canvas.ColorArg (RGB 122 22 22))        -- dark red
-            else Canvas.fillStyle (Canvas.ColorArg (RGB 193 35 35))
-          
-          Canvas.fillRect (
-            b.bombX, b.bombY
-            , b.bombSize, b.bombSize
-            )
+      Canvas.fillRect (b.bombX, b.bombY, b.bombSize, b.bombSize)
