@@ -805,9 +805,9 @@ viewCanvas model () = do
     
     -- Blue box, 50x50 (player - drawn last so it appears on top)
     Canvas.fillStyle (Canvas.ColorArg (RGB 51 124 179))  -- Set fill color to blue
-    let px = model.player.playerX - 25
-    let py = model.player.playerY - 25
     let ps = model.player.playerSize
+    let px = model.player.playerX - ps / 2
+    let py = model.player.playerY - ps / 2
     Canvas.fillRect (px, py, ps, ps)  -- Draw square at current position
     
   where
