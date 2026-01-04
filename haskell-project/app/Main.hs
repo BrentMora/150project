@@ -125,6 +125,7 @@ data Model = Model                            -- Application state
   , obstacles :: [Obstacle]                   -- List of solid obstacle blocks
   , score :: Int                              -- Current score
   , gameOver :: Bool                          -- Whether the game has ended
+  , gameTimer :: Float                        -- General game timer
   }
   deriving (Show, Eq)                         
 
@@ -263,6 +264,7 @@ initModel =
       ]
     , score = 0       -- Start with 0 points
     , gameOver = False -- Game starts running
+    , gameTimer = 60    -- Starts with 60 seconds
     }
 
 -- =========================
@@ -613,6 +615,23 @@ updateBombRemoval bombs =
        -- , bombVelY = finalVelY
        -- }
 
+--Update game timer
+updateGameTimer :: Model -> Float
+updateGameTimer model =
+  let
+    oldTime = model.gameTimer
+    tick = 0.017
+  in
+    oldTime - tick
+
+-- Convert game state timer from ss to mm::ss
+displayTimer :: Model -> String
+displayTimer model = do 
+  let constant = 60
+  let roundedTimer = fromIntegral (round model.gameTimer)
+  let (m,s) = divMod (round model.gameTimer) (round constant)
+  if model.gameTimer >= constant then "Time Left: " ++ (show m) ++ ":" ++ (show s) else "Time Left: " ++ (show roundedTimer)
+
 -- Check if two rectangles (player and bomb) are colliding
 -- Uses AABB (Axis-Aligned Bounding Box) collision detection
 checkCollision :: Player -> Bomb -> Bool
@@ -688,6 +707,12 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
         
     -- Increment score each frame if still alive
   let newScore = if collision then score model else score model + 1
+
+   -- Decrement Timer
+  let gameTimer' = if collision then model.gameTimer else updateGameTimer model
+
+  -- Check for Game Over
+  let gameOver' = if model.gameOver || collision || gameTimer' <= 0 then True else False
   
   M.put $                                     -- Update the model with new state
     model
@@ -698,7 +723,8 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       , bombs = updatedBombs''''
       , obstacles = updatedObstacles'
       , score = newScore
-      , gameOver = collision
+      , gameOver = gameOver'
+      , gameTimer = gameTimer'
       }
   M.issue MsgGetTime                          -- Issue next frame request (continues animation loop)
 
@@ -750,6 +776,7 @@ view model =
       []                                      -- No attributes
       [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model]  -- Textarea showing model state (debugging)
       , H.br_ []                              -- Line break
+      , H.p_ [] [M.text (M.ms (displayTimer model))]
       , Canvas.canvas                         -- Canvas element for drawing
           [ P.width_ (M.ms screenWidth)       -- Set canvas width attribute
           , P.height_ (M.ms screenHeight)     -- Set canvas height attribute
