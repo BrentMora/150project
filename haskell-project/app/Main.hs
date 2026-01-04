@@ -805,8 +805,8 @@ viewCanvas model () = do
     
     -- Blue box, 50x50 (player - drawn last so it appears on top)
     Canvas.fillStyle (Canvas.ColorArg (RGB 51 124 179))  -- Set fill color to blue
-    let px = model.player.playerX
-    let py = model.player.playerY
+    let px = model.player.playerX - 25
+    let py = model.player.playerY - 25
     let ps = model.player.playerSize
     Canvas.fillRect (px, py, ps, ps)  -- Draw square at current position
     
@@ -817,7 +817,7 @@ viewCanvas model () = do
         then Canvas.fillStyle (Canvas.ColorArg (RGB 64 64 64))      -- dark gray
         else Canvas.fillStyle (Canvas.ColorArg (RGB 192 192 192))   -- light gray
         
-      Canvas.fillRect (obs.obstacleX, obs.obstacleY, squareSize, squareSize)
+      Canvas.fillRect (obs.obstacleX - 25, obs.obstacleY - 25, squareSize, squareSize)
     
     drawBombs :: Bomb -> Canvas.Canvas () -- helper function to draw bombs
     drawBombs b = do
@@ -825,4 +825,4 @@ viewCanvas model () = do
         then Canvas.fillStyle (Canvas.ColorArg (RGB 122 22 22))        -- dark red
         else Canvas.fillStyle (Canvas.ColorArg (RGB 193 35 35))        -- brighter red for detonating
       
-      Canvas.fillRect (b.bombX, b.bombY, b.bombSize, b.bombSize)
+      Canvas.fillRect (b.bombX - 25, b.bombY - 25, b.bombSize, b.bombSize)
