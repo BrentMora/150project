@@ -104,6 +104,7 @@ data Bomb = Bomb
   , bombSize :: Double    -- Size of the bomb square
   , isDetonated :: DetonationStatus  -- boolean to track detonating status
   , timer :: Double       -- float timer that ticks down to detonation
+  , isOverlapping :: Bool -- checks if it overlaps with player
   } deriving (Show, Eq)
 
 -- Obstacle represents solid blocks that block movement
@@ -328,8 +329,8 @@ updatePlayerPlaceBomb isBA p =
 -- Takes a Map of currently pressed keys and the current player state
 -- Returns updated player state
 -- also updates player targeting
-updatePlayer :: [Obstacle] -> Player -> Player
-updatePlayer obstacles p = 
+updatePlayer :: [Obstacle] -> [Bomb] -> Player -> Player
+updatePlayer obstacles bombs p = 
   let -- Calculate desired new position
       dir = currentDirection p -- direction request
       newX = playerX p + vx
@@ -345,6 +346,8 @@ updatePlayer obstacles p =
 
       -- Check if new position and new target would collide with any obstacle
       wouldCollide = any (checkPlayerObstacleCollision testPlayer) obstacles
+      -- Check if new position would collide with any ticking bombs
+      wouldCollideB = any (checkPlayerBombCollision testPlayer) bombs
 
       speed = 5
 
@@ -439,7 +442,7 @@ updateBomb p bombs =
     bombsH = bombsHeld p
     spaceState = spaceRequest p -- if space was requested
 
-    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3
+    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3 True
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
@@ -515,6 +518,7 @@ detonateBomb obs b =
       , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
+      , isOverlapping = False
      }
     
     newBombDown = Bomb {
@@ -525,6 +529,7 @@ detonateBomb obs b =
       , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
+      , isOverlapping = False
     }
 
     newBombLeft = Bomb {
@@ -535,6 +540,7 @@ detonateBomb obs b =
       , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
+      , isOverlapping = False
     }
 
     newBombRight = Bomb {
@@ -545,6 +551,7 @@ detonateBomb obs b =
       , bombSize = squareSize
       , isDetonated = Detonating
       , timer = 1
+      , isOverlapping = False
     }
 
     testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
@@ -574,43 +581,6 @@ updateBombRemoval bombs =
   where
     keep b =
       not (isDetonated b == Detonating && timer b <= 0)
-
--- Update a single enemy's position and handle wall and obstacle bouncing
--- updateEnemy :: [Obstacle] -> Bomb -> Bomb -- REFACTOR TO SPAWNING BOMBS
--- updateEnemy obstacles b = 
-  -- let -- Calculate new position
-      -- newX = bombX b + bombVelX b
-      -- newY = bombY b + bombVelY b
-      
-      -- Check wall collisions
-      -- hitLeftWall = newX <= 0
-      -- hitRightWall = newX >= canvasWidth
-      -- hitTopWall = newY <= 0
-      -- hitBottomWall = newY >= canvasLength
-      
-      -- Create test enemy at new position
-      -- testBomb = b { bombX = newX, bombY = newY }
-      
-      -- Check if new position would collide with obstacles
-      -- hitObstacle = any (checkBombObstacleCollision testBomb) obstacles
-      
-      -- Reverse velocity if hitting wall or obstacle
-      -- finalVelX = if hitLeftWall || hitRightWall || hitObstacle 
-                  -- then -(bombVelX b) 
-                  -- else bombVelX b
-      -- finalVelY = if hitTopWall || hitBottomWall || hitObstacle 
-                  -- then -(bombVelY b) 
-                  -- else bombVelY b
-      
-      -- Clamp position to stay in bounds
-      -- finalX = clamp 0 canvasWidth newX
-      -- finalY = clamp 0 canvasLength newY
-      
-  -- in b { bombX = finalX
-       -- , bombY = finalY
-       -- , bombVelX = finalVelX
-       -- , bombVelY = finalVelY
-       -- }
 
 --Update game timer
 updateGameTimer :: Model -> Float
@@ -658,6 +628,34 @@ checkCollision p b =
      pBottom > bTop && pTop < bBottom     -- Y axis overlap
      && (isDetonated b == Detonating)     -- only if the bomb is detonating
 
+-- Check if player and bomb are colliding (only applies to ticking bombs)
+checkPlayerBombCollision :: Player -> Bomb -> Bool
+checkPlayerBombCollision p b = 
+  -- Check if rectangles overlap on both X and Y axes
+  let px = playerX p
+      py = playerY p
+      ps = playerSize p
+      bx = bombX b
+      by = bombY b
+      bs = bombSize b
+      
+      -- Calculate edges of each rectangle
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      bLeft = bx - bs / 2
+      bRight = bx + bs / 2
+      bTop = by - bs / 2
+      bBottom = by + bs / 2
+     
+  in -- Rectangles collide if they overlap on both axes
+    pRight > bLeft && pLeft < bRight &&  -- X axis overlap
+    pBottom > bTop && pTop < bBottom &&  -- Y axis overlap
+    (isDetonated b == Ticking) &&     -- only if the bomb is Ticking
+    (isOverlapping b == False)        -- and they were not overlapping in the last tick
+
 -- Clamp a value between a minimum and maximum
 -- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
 clamp :: Ord a => a -> a -> a -> a
@@ -693,7 +691,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let diff = if milli >= lastMilli then milli - lastMilli else 1000 - lastMilli + milli
   -- Calculate time delta, handling millisecond wraparound at 1000
   
-  let updatedPlayer = updatePlayer (obstacles model) (player model)  -- Update player position, checking obstacles
+  let updatedPlayer = updatePlayer (obstacles model) (bombs model) (player model)  -- Update player position, checking obstacles
   let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (bombs model)  -- Update bombs (placing bombs)
 
   let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
