@@ -13,6 +13,10 @@ import qualified Data.Text.Encoding as TE
 -- Type alias for player identification
 type PlayerId = Int
 
+-- PowerUps
+data PowerUpTypes = FireUp | BombUp | SpeedUp
+  deriving (Show, Eq, FromJSON, ToJSON, Generic)
+
 -- Direction enumeration
 data Direction
   = DirUp
@@ -34,6 +38,16 @@ data DetonationStatus = Ticking | Detonating | Done
 data GameOverFlag = NotGO | YesGO | Render
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
 
+-- PowerUp Structure
+data PowerUp = PowerUp
+  { puX :: Double
+  , puY :: Double
+  , puWidth :: Double
+  , puHeight :: Double
+  , puType :: PowerUpTypes
+  }
+  deriving (Show, Eq, FromJSON, ToJSON, Generic)
+
 -- Player data structure
 data Player = Player
   { playerId :: PlayerId
@@ -49,6 +63,8 @@ data Player = Player
   , xCoords :: [Double]
   , yCoords :: [Double]
   , currentDirection :: Maybe Direction
+  , maxBombs :: Int         -- refactor bomb increment to make use of this
+  , speedUps :: Double         -- refactor so speed makes use of this
   }
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
 

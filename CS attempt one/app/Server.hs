@@ -14,6 +14,7 @@ import qualified Data.Map as Map
 import qualified Data.Text as T
 import qualified Network.WebSockets as WS
 import Data.List (minimumBy)
+import System.Random (randomRIO)
 
 -- Number of players required
 requiredPlayerCount :: Int
@@ -47,6 +48,7 @@ data GameState = GameState
   , players :: Map Common.PlayerId Common.Player
   , bombs :: [Common.Bomb]
   , obstacles :: [Common.Obstacle]
+  , powerups :: [Common.PowerUp]
   , eventQueue :: [GameEvent]
   , gameOver :: Common.GameOverFlag
   , gameTimer :: Float
@@ -87,6 +89,7 @@ initGameState =
     , players = Map.empty
     , bombs = []
     , obstacles = initialObstacles
+    , powerups = []
     , eventQueue = []
     , gameOver = Common.NotGO
     , gameTimer = 60
@@ -320,6 +323,8 @@ processNextEvent state =
               , Common.xCoords = [25, 75, 125, 175, 225, 275, 325, 375, 425, 475, 525, 575, 625, 675, 725]
               , Common.yCoords = [25, 75, 125, 175, 225, 275, 325, 375, 425, 475, 525, 575, 625]
               , Common.currentDirection = Just Common.DirNone
+              , Common.maxBombs = 0
+              , Common.speedUps = 0
               }
       state
         { players = Map.insert newPlayerId newPlayer state.players
@@ -364,7 +369,8 @@ updatePlayers state =
 updatePlayerPosition :: [Common.Obstacle] -> [Common.Bomb] -> Common.Player -> Common.Player
 updatePlayerPosition obstacles bombs p =
   let dir = p.currentDirection
-      speed = 5
+      mult = p.speedUps
+      speed = 5 + (2 * mult) -- from speedups
       vx = case dir of
         Just Common.DirLeft -> -speed
         Just Common.DirRight -> speed
@@ -458,7 +464,8 @@ updatePlayerBombIncrement :: [Common.Bomb] -> Common.Player -> Common.Player
 updatePlayerBombIncrement bombs p =
   let lenB = length bombs
       oldBH = p.bombsHeld
-  in if lenB == 0 && oldBH < 1
+      maxB = p.maxBombs
+  in if lenB < maxB && oldBH < maxB
      then p { Common.bombsHeld = oldBH + 1 }
      else p
 
@@ -698,6 +705,96 @@ updateTicks state =
   if Map.size state.players == requiredPlayerCount
   then state { ticks = state.ticks + 1 }
   else state
+
+isPowerUp :: Common.Obstacle -> IO Bool
+isPowerUp _ = do
+  n <- randomRIO (0 :: Int, 9 :: Int)  -- specify Int explicitly
+  pure (n == 1)
+
+getTypePowerUp :: Common.Obstacle -> [Common.PowerUp] -> IO [Common.PowerUp]
+getTypePowerUp obs powerups = do
+  n <- randomRIO (0 :: Int, 2 :: Int)  -- specify Int explicitly
+  let puType = case n of
+        0 -> Common.FireUp
+        1 -> Common.BombUp
+        2 -> Common.SpeedUp
+        _ -> error "Impossible"
+      newPowerUp = Common.PowerUp
+        { Common.puX = obs.obstacleX
+        , Common.puY = obs.obstacleY
+        , Common.puWidth = obs.obstacleWidth
+        , Common.puHeight = obs.obstacleHeight
+        , Common.puType = puType
+        }
+  pure (powerups ++ [newPowerUp])
+
+
+-- Check player-powerup collision
+checkPlayerPowerUpCollision :: Common.Player -> Common.PowerUp -> Bool
+checkPlayerPowerUpCollision p pu =
+  let px = p.playerX
+      py = p.playerY
+      ps = p.playerSize
+      pux = pu.puX
+      puy = pu.puY
+      puw = pu.puWidth
+      puh = pu.puHeight
+      
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      puLeft = pux - puw / 2
+      puRight = pux + puw / 2
+      puTop = puy - puh / 2
+      puBottom = puy + puh / 2
+      
+  in pRight > puLeft && pLeft < puRight &&
+     pBottom > puTop && pTop < puBottom
+
+addPowerUptoPlayer :: Common.PowerUp -> Common.Player -> Common.Player
+addPowerUptoPlayer pu p =
+  let
+    collided = checkPlayerPowerUpCollision p pu
+    putype = pu.puType
+    oldMB = p.maxBombs
+    oldSP = p.speedUps
+  in
+    if collided 
+        then
+            if putype == Common.BombUp
+                then p { Common.maxBombs = oldMB + 1 }
+            else if putype == Common.SpeedUp
+                then p { Common.speedUps = oldSP + 1 }
+            else
+                p
+    else
+        p
+
+-- Check bomb-powerup collision
+checkPowerUpBombCollision :: Common.PowerUp -> Common.Bomb -> Bool
+checkPowerUpBombCollision p b =
+  let px = p.puX
+      py = p.puY
+      ps = 50
+      bx = b.bombX
+      by = b.bombY
+      bw = b.bombSize
+      bh = b.bombSize
+      
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      bLeft = bx - bw / 2
+      bRight = bx + bw / 2
+      bTop = by - bh / 2
+      bBottom = by + bh / 2
+      
+  in pRight > bLeft && pLeft < bRight &&
+     pBottom > bTop && pTop < bBottom
 
 -- Broadcast to all clients
 broadcastToClients :: MVar ServerState -> IO ()
