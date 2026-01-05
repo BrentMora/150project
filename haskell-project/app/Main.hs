@@ -367,7 +367,7 @@ updatePlayer obstacles bombs p =
           then speed
         else 0
       
-  in if wouldCollide
+  in if wouldCollide || wouldCollideB
      then p  -- Don't move if it would hit an obstacle
      else testPlayer  -- Move to new position if clear
 
@@ -837,7 +837,7 @@ view model =
   -- trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
-      [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model]  -- Textarea showing model state (debugging)
+      [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.bombs]  -- Textarea showing model state (debugging)
       , H.br_ []                              -- Line break
       , H.p_ [] [M.text (M.ms (displayTimer model))]
       , Canvas.canvas                         -- Canvas element for drawing
