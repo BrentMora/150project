@@ -814,7 +814,10 @@ viewCanvas model () = do
   if model.gameOver
     then do 
       Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
-      Canvas.fillRect (0, 0, screenWidth, screenHeight)  -- Fill entire canvas with black
+      let ps = model.player.playerSize
+      let px = model.player.playerX - ps / 2
+      let py = model.player.playerY - ps / 2
+      Canvas.fillRect (px, py, ps, ps)  -- Draw square at current position
       
       -- Game Over message
       Canvas.fillStyle (Canvas.ColorArg (RGB 255 0 0))  -- Red text
