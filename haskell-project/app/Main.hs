@@ -656,6 +656,48 @@ checkPlayerBombCollision p b =
     (isDetonated b == Ticking) &&     -- only if the bomb is Ticking
     (isOverlapping b == False)        -- and they were not overlapping in the last tick
 
+-- check if bomb and player collide but for the bomb to update
+checkBombPlayerCollision :: Bomb -> Player -> Bool
+checkBombPlayerCollision b p =
+  -- Check if rectangles overlap on both X and Y axes
+  let px = playerX p
+      py = playerY p
+      ps = playerSize p
+      bx = bombX b
+      by = bombY b
+      bs = bombSize b
+      
+      -- Calculate edges of each rectangle
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      bLeft = bx - bs / 2
+      bRight = bx + bs / 2
+      bTop = by - bs / 2
+      bBottom = by + bs / 2
+     
+  in -- Rectangles collide if they overlap on both axes
+    pRight > bLeft && pLeft < bRight &&  -- X axis overlap
+    pBottom > bTop && pTop < bBottom &&  -- Y axis overlap
+    (isDetonated b == Ticking)     -- only if the bomb is Ticking
+
+-- map over bombs to check if they are overlapping
+updateBombOverlapping :: Player -> Bomb -> Bomb
+updateBombOverlapping p b =
+  let
+    isNotColliding = not (checkBombPlayerCollision b p)
+
+    newBomb = b {
+      isOverlapping = False
+    }
+
+  in 
+    if isNotColliding
+      then newBomb
+    else b
+
 -- Clamp a value between a minimum and maximum
 -- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
 clamp :: Ord a => a -> a -> a -> a
@@ -691,8 +733,10 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let diff = if milli >= lastMilli then milli - lastMilli else 1000 - lastMilli + milli
   -- Calculate time delta, handling millisecond wraparound at 1000
   
-  let updatedPlayer = updatePlayer (obstacles model) (bombs model) (player model)  -- Update player position, checking obstacles
-  let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (bombs model)  -- Update bombs (placing bombs)
+  let updatedBombsForColl = map (updateBombOverlapping (player model)) (bombs model)
+
+  let updatedPlayer = updatePlayer (obstacles model) (updatedBombsForColl) (player model)  -- Update player position, checking obstacles
+  let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (updatedBombsForColl)  -- Update bombs (placing bombs)
 
   let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
         
