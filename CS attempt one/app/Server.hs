@@ -50,6 +50,7 @@ data GameState = GameState
   , eventQueue :: [GameEvent]
   , gameOver :: Common.GameOverFlag
   , gameTimer :: Float
+  , gameStarted :: Bool
   }
   deriving (Show, Eq)
 
@@ -79,7 +80,6 @@ initServerState =
     , gameState = initGameState
     }
 
--- Initial game state
 initGameState :: GameState
 initGameState =
   GameState
@@ -90,6 +90,7 @@ initGameState =
     , eventQueue = []
     , gameOver = Common.NotGO
     , gameTimer = 60
+    , gameStarted = False
     }
 
 -- Initial obstacles (border + grid + soft blocks)
@@ -248,6 +249,12 @@ getDataFromClient client stateMVar = forever $ do
                 }
           else pure serverState
 
+startGameIfReady :: GameState -> GameState
+startGameIfReady state
+  | not state.gameStarted && isGameActive state =
+      state { gameStarted = True, gameTimer = 60 }
+  | otherwise = state
+
 -- Check if game is active
 isGameActive :: GameState -> Bool
 isGameActive state = Map.size state.players == requiredPlayerCount
@@ -267,6 +274,7 @@ updateGameState :: GameState -> GameState
 updateGameState gameState =
   gameState
     & processEvents
+    & startGameIfReady
     & updatePlayers
     & updateBombsHeld
     & updateBombOverlapping
@@ -677,13 +685,12 @@ checkPlayerDetonatingBombCollision p b =
      pBottom > bTop && pTop < bBottom &&
      b.isDetonated == Common.Detonating
 
--- Update game timer
 updateTimer :: GameState -> GameState
-updateTimer state =
-  if state.gameOver /= Common.NotGO
-     || not (isGameActive state)
-  then state
-  else state { gameTimer = state.gameTimer - 0.0167 }
+updateTimer state
+  | not state.gameStarted = state
+  | state.gameOver /= Common.NotGO = state
+  | otherwise =
+      state { gameTimer = max 0 (state.gameTimer - 0.0167) }
 
 -- Update ticks
 updateTicks :: GameState -> GameState
