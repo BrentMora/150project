@@ -735,76 +735,85 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let lastMilli = model.lastMilli             -- Get previous frame's timestamp
   let diff = if milli >= lastMilli then milli - lastMilli else 1000 - lastMilli + milli
   -- Calculate time delta, handling millisecond wraparound at 1000
+
+  -- ensure 60 fps runtime
+  let frameDur = 16.67
+
+  -- update model if frameDur has passed
+  if diff < frameDur
+    then do
+      M.issue MsgGetTime
+    else do
   
-  let updatedBombsForColl = map (updateBombOverlapping (player model)) (bombs model)
+      let updatedBombsForColl = map (updateBombOverlapping (player model)) (bombs model)
 
-  let updatedPlayer = updatePlayer (obstacles model) (updatedBombsForColl) (player model)  -- Update player position, checking obstacles
-  let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (updatedBombsForColl)  -- Update bombs (placing bombs)
+      let updatedPlayer = updatePlayer (obstacles model) (updatedBombsForColl) (player model)  -- Update player position, checking obstacles
+      let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (updatedBombsForColl)  -- Update bombs (placing bombs)
 
-  let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
-        
-  let updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
-  let (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles model) updatedBombs'
-    -- detonate depleted bomb timers and destroy appropriate softblocks
-        
-  let (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
-    -- detonate bombs that touched by other detonated bombs
+      let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
+            
+      let updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
+      let (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles model) updatedBombs'
+        -- detonate depleted bomb timers and destroy appropriate softblocks
+            
+      let (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
+        -- detonate bombs that touched by other detonated bombs
 
-  let updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
+      let updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
 
-    -- Check if player collides with any detonating bomb
-  let collision = any (checkCollision updatedPlayer') updatedBombs''''
-        
-    -- Increment score each frame if still alive
-  let newScore = if collision then score model else score model + 1
+        -- Check if player collides with any detonating bomb
+      let collision = any (checkCollision updatedPlayer') updatedBombs''''
+            
+        -- Increment score each frame if still alive
+      let newScore = if collision then score model else score model + 1
 
-   -- Decrement Timer
-  let gameTimer' = if collision then model.gameTimer else updateGameTimer model
+      -- Decrement Timer
+      let gameTimer' = if collision then model.gameTimer else updateGameTimer model
 
-  -- Check for Game Over
-  let isGameOver = model.gameOver == YesGO || model.gameOver == Render || collision || gameTimer' <= 0
-  -- game is over if model says so, collision occurred, or gameTimer ran out
-  
-  let gameOver' = if isGameOver && model.gameOver == Render -- Game is Over but last request is to render once, so assume render occurred
-                    then YesGO -- final state
-                  else if isGameOver && model.gameOver == NotGO
-                    then Render
-                  else if model.gameOver == YesGO
-                    then YesGO
-                  else
-                    model.gameOver
+      -- Check for Game Over
+      let isGameOver = model.gameOver == YesGO || model.gameOver == Render || collision || gameTimer' <= 0
+      -- game is over if model says so, collision occurred, or gameTimer ran out
+      
+      let gameOver' = if isGameOver && model.gameOver == Render -- Game is Over but last request is to render once, so assume render occurred
+                        then YesGO -- final state
+                      else if isGameOver && model.gameOver == NotGO
+                        then Render
+                      else if model.gameOver == YesGO
+                        then YesGO
+                      else
+                        model.gameOver
 
-  let modelContinue = model { 
-      time = model.time + diff              -- Accumulate elapsed time
-      , lastMilli = milli                     -- Store current timestamp for next frame
-      , tick = model.tick + 1                 -- Increment frame counter
-      , player = updatedPlayer'
-      , bombs = updatedBombs''''
-      , obstacles = updatedObstacles'
-      , score = newScore
-      , gameOver = gameOver'
-      , gameTimer = gameTimer'
-      }
-  
-  let modelGameOver = model { 
-      time = model.time + diff              -- Accumulate elapsed time
-      , lastMilli = milli                     -- Store current timestamp for next frame
-      , tick = model.tick + 1                 -- Increment frame counter
-      , player = goPlayer                     -- prohibit movement and Block bomb requests
-      , bombs = updatedBombs''''
-      , obstacles = updatedObstacles'
-      , score = newScore
-      , gameOver = gameOver'
-      , gameTimer = goTimer
-      }
-  
-  let finalModel = if gameOver' == YesGO
-                    then modelGameOver
-                  else modelContinue
+      let modelContinue = model { 
+          time = model.time + diff              -- Accumulate elapsed time
+          , lastMilli = milli                     -- Store current timestamp for next frame
+          , tick = model.tick + 1                 -- Increment frame counter
+          , player = updatedPlayer'
+          , bombs = updatedBombs''''
+          , obstacles = updatedObstacles'
+          , score = newScore
+          , gameOver = gameOver'
+          , gameTimer = gameTimer'
+          }
+      
+      let modelGameOver = model { 
+          time = model.time + diff              -- Accumulate elapsed time
+          , lastMilli = milli                     -- Store current timestamp for next frame
+          , tick = model.tick + 1                 -- Increment frame counter
+          , player = goPlayer                     -- prohibit movement and Block bomb requests
+          , bombs = updatedBombs''''
+          , obstacles = updatedObstacles'
+          , score = newScore
+          , gameOver = gameOver'
+          , gameTimer = goTimer
+          }
+      
+      let finalModel = if gameOver' == YesGO
+                        then modelGameOver
+                      else modelContinue
 
-  M.put $ finalModel                          -- Update the model with new state
+      M.put $ finalModel                          -- Update the model with new state
 
-  M.issue MsgGetTime                          -- Issue next frame request (continues animation loop)
+      M.issue MsgGetTime                          -- Issue next frame request (continues animation loop)
 
 ---
 
