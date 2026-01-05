@@ -127,7 +127,6 @@ data Model = Model                            -- Application state
   , player :: Player                          -- The player character
   , bombs :: [Bomb]                           -- List of bombs
   , obstacles :: [Obstacle]                   -- List of solid obstacle blocks
-  , score :: Int                              -- Current score
   , gameOver :: GameOverFlag                  -- Whether the game has ended
   , gameTimer :: Float                        -- General game timer
   }
@@ -145,7 +144,7 @@ initialPlayer = Player
   , playerVelX = 0          -- Not moving initially
   , playerVelY = 0          -- Not moving initially
   , playerSize = 30         -- 30 pixels square
-  , bombsHeld = 100         -- 1 bomb held by default
+  , bombsHeld = 1         -- 1 bomb held by default
   , targetX = 375           -- same as player position
   , targetY = 575           -- same as player position
   , spaceRequest = Released    -- spacekey is not pressed by default
@@ -263,7 +262,6 @@ initModel =
       , Obstacle 75 175 squareSize squareSize False
       , Obstacle 625 575 squareSize squareSize False
       ]
-    , score = 0       -- Start with 0 points
     , gameOver = NotGO -- Game starts running
     , gameTimer = 60    -- Starts with 60 seconds
     }
@@ -701,6 +699,16 @@ updateBombOverlapping p b =
       then newBomb
     else b
 
+updatePlayerBombIncrement :: [Bomb] -> Player -> Player
+updatePlayerBombIncrement bombs p =
+  let
+    lenB = length bombs
+    oldBH = bombsHeld p
+  
+  in if lenB == 0 && oldBH < 1
+    then p { bombsHeld = oldBH + 1 }
+    else p
+
 -- Clamp a value between a minimum and maximum
 -- Example: clamp 0 100 150 = 100, clamp 0 100 50 = 50
 clamp :: Ord a => a -> a -> a -> a
@@ -744,10 +752,12 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
     then do
       M.issue MsgGetTime
     else do
-  
-      let updatedBombsForColl = map (updateBombOverlapping (player model)) (bombs model)
 
-      let updatedPlayer = updatePlayer (obstacles model) (updatedBombsForColl) (player model)  -- Update player position, checking obstacles
+      let updatedPlayerBombIncrement = updatePlayerBombIncrement (bombs model) (player model)
+  
+      let updatedBombsForColl = map (updateBombOverlapping (updatedPlayerBombIncrement)) (bombs model)
+
+      let updatedPlayer = updatePlayer (obstacles model) (updatedBombsForColl) (updatedPlayerBombIncrement)  -- Update player position, checking obstacles
       let (updatedBombs, isBombAdded) = updateBomb updatedPlayer (updatedBombsForColl)  -- Update bombs (placing bombs)
 
       let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
@@ -763,9 +773,6 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
 
         -- Check if player collides with any detonating bomb
       let collision = any (checkCollision updatedPlayer') updatedBombs''''
-            
-        -- Increment score each frame if still alive
-      let newScore = if collision then score model else score model + 1
 
       -- Decrement Timer
       let gameTimer' = if collision then model.gameTimer else updateGameTimer model
@@ -790,7 +797,6 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
           , player = updatedPlayer'
           , bombs = updatedBombs''''
           , obstacles = updatedObstacles'
-          , score = newScore
           , gameOver = gameOver'
           , gameTimer = gameTimer'
           }
@@ -802,7 +808,6 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
           , player = goPlayer                     -- prohibit movement and Block bomb requests
           , bombs = updatedBombs''''
           , obstacles = updatedObstacles'
-          , score = newScore
           , gameOver = gameOver'
           , gameTimer = goTimer
           }
@@ -861,8 +866,8 @@ view model =
   -- trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
-      [ -- H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.bombs]  -- Textarea showing model state (debugging)
-      -- H.br_ []                              -- Line break
+      [ -- H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.player]  -- Textarea showing model state (debugging)
+      -- , H.br_ []                              -- Line break
       H.p_ [] [M.text (M.ms (displayTimer model))]
       , Canvas.canvas                         -- Canvas element for drawing
           [ P.width_ (M.ms screenWidth)       -- Set canvas width attribute
