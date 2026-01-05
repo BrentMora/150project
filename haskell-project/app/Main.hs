@@ -164,10 +164,7 @@ initModel =
     , lastMilli = 0                           -- No previous frame yet
     , tick = 0                                -- No frames rendered yet
     , player = initialPlayer
-    , bombs = 
-      [ Bomb 75 75 0 0 50 Ticking 3           -- First bomb: top-left, moving right-down, size 25
-      , Bomb 575 575 0 0 50 Ticking 3         -- Second bomb: bottom-right, moving left-up, size 25
-      ]
+    , bombs = []
     , obstacles =
       [ Obstacle 25 25 squareSize squareSize  True -- Top Border hard blocks...
       , Obstacle 75 25 squareSize squareSize  True  
