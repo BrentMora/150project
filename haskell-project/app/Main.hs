@@ -464,7 +464,7 @@ updateBombTimer :: Bomb -> Bomb
 updateBombTimer b =
   let -- decrement bomb timer by 0.16 seconds every function call
     oldTime = timer b
-    timeTick = 0.017
+    timeTick = 0.0167
     bDS = isDetonated b
   
   in if oldTime <= 0 -- if time is up, detonate
@@ -620,7 +620,7 @@ updateGameTimer :: Model -> Float
 updateGameTimer model =
   let
     oldTime = model.gameTimer
-    tick = 0.017
+    tick = 0.0167
   in
     oldTime - tick
 
@@ -794,7 +794,7 @@ update MsgNoOp = do                           -- Handle no-op message: do nothin
 
 view :: Model -> M.View Model Msg             -- View function: renders UI from model
 view model =
-  trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
+  -- trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
       [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model]  -- Textarea showing model state (debugging)
