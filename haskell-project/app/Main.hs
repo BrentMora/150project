@@ -626,11 +626,12 @@ updateGameTimer model =
 
 -- Convert game state timer from ss to mm::ss
 displayTimer :: Model -> String
-displayTimer model = do 
-  let constant = 60
-  let roundedTimer = fromIntegral (round model.gameTimer)
-  let (m,s) = divMod (round model.gameTimer) (round constant)
-  if model.gameTimer >= constant then "Time Left: " ++ (show m) ++ ":" ++ (show s) else "Time Left: " ++ (show roundedTimer)
+displayTimer model =
+  let timer = round model.gameTimer  -- Round once
+      (m, s) = divMod timer 60       -- Get minutes and seconds
+      mPadded = if m < 10 then "0" ++ show m else show m
+      sPadded = if s < 10 then "0" ++ show s else show s
+  in "Time Left: " ++ mPadded ++ ":" ++ sPadded
 
 -- Check if two rectangles (player and bomb) are colliding
 -- Uses AABB (Axis-Aligned Bounding Box) collision detection
