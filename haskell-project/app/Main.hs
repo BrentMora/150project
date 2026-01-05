@@ -861,9 +861,9 @@ view model =
   -- trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
-      [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.bombs]  -- Textarea showing model state (debugging)
-      , H.br_ []                              -- Line break
-      , H.p_ [] [M.text (M.ms (displayTimer model))]
+      [ -- H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.bombs]  -- Textarea showing model state (debugging)
+      -- H.br_ []                              -- Line break
+      H.p_ [] [M.text (M.ms (displayTimer model))]
       , Canvas.canvas                         -- Canvas element for drawing
           [ P.width_ (M.ms screenWidth)       -- Set canvas width attribute
           , P.height_ (M.ms screenHeight)     -- Set canvas height attribute
