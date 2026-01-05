@@ -158,6 +158,7 @@ view model =
     []
     [ H.textarea_ [P.rows_ "3", P.cols_ "40"] [M.text $ M.ms $ show (keyState model)]
     , H.br_ []
+    , timerView model
     , Canvas.canvas
         [ P.width_ (M.ms screenWidth)
         , P.height_ (M.ms screenHeight)
@@ -165,6 +166,15 @@ view model =
         (\_ -> pure ())
         (viewCanvas model)
     ]
+
+timerView :: Model -> M.View Model Msg
+timerView model =
+  case model.viewData of
+    Nothing ->
+      H.p_ [] [ M.text "Waiting for server..." ]
+
+    Just vd ->
+      H.p_ [] [ M.text (M.ms (displayTimer vd.gameTimer)) ]
 
 -- Display timer in mm:ss format
 displayTimer :: Float -> String

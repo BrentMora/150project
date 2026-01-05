@@ -681,6 +681,7 @@ checkPlayerDetonatingBombCollision p b =
 updateTimer :: GameState -> GameState
 updateTimer state =
   if state.gameOver /= Common.NotGO
+     || not (isGameActive state)
   then state
   else state { gameTimer = state.gameTimer - 0.0167 }
 

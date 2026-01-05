@@ -17,5 +17,5 @@ main = do
   -- Pattern match on arguments to determine mode
   case args of
     ["--host"] -> mainServer                          -- If "--host" flag, run as server
-    [ip, port] -> mainClient ip (read port)           -- If ip and port provided, run as client
-    _ -> putStrLn "Usage: program --host  OR  program <ip> <port>"  -- Invalid arguments
+    [] -> mainClient "127.0.0.1" 15000                -- No args: run as client connecting to localhost:15000
+    _ -> putStrLn "Usage: program --host  OR  program (no args for client)"  -- Invalid arguments
