@@ -65,6 +65,9 @@ handleKey intSet
 -- Data
 -- =========================
 
+data GameOverFlag = NotGO | YesGO | Render
+  deriving (Show, Eq)
+
 data Request = Valid | Blocked | Released
   deriving (Show, Eq)
 
@@ -125,7 +128,7 @@ data Model = Model                            -- Application state
   , bombs :: [Bomb]                           -- List of bombs
   , obstacles :: [Obstacle]                   -- List of solid obstacle blocks
   , score :: Int                              -- Current score
-  , gameOver :: Bool                          -- Whether the game has ended
+  , gameOver :: GameOverFlag                  -- Whether the game has ended
   , gameTimer :: Float                        -- General game timer
   }
   deriving (Show, Eq)                         
@@ -261,7 +264,7 @@ initModel =
       , Obstacle 625 575 squareSize squareSize False
       ]
     , score = 0       -- Start with 0 points
-    , gameOver = False -- Game starts running
+    , gameOver = NotGO -- Game starts running
     , gameTimer = 60    -- Starts with 60 seconds
     }
 
@@ -759,7 +762,17 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
   let gameTimer' = if collision then model.gameTimer else updateGameTimer model
 
   -- Check for Game Over
-  let gameOver' = if model.gameOver || collision || gameTimer' <= 0 then True else False
+  let isGameOver = model.gameOver == YesGO || model.gameOver == Render || collision || gameTimer' <= 0
+  -- game is over if model says so, collision occurred, or gameTimer ran out
+  
+  let gameOver' = if isGameOver && model.gameOver == Render -- Game is Over but last request is to render once, so assume render occurred
+                    then YesGO -- final state
+                  else if isGameOver && model.gameOver == NotGO
+                    then Render
+                  else if model.gameOver == YesGO
+                    then YesGO
+                  else
+                    model.gameOver
 
   let modelContinue = model { 
       time = model.time + diff              -- Accumulate elapsed time
@@ -785,7 +798,9 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       , gameTimer = goTimer
       }
   
-  let finalModel = if gameOver' then modelGameOver else modelContinue
+  let finalModel = if gameOver' == YesGO
+                    then modelGameOver
+                  else modelContinue
 
   M.put $ finalModel                          -- Update the model with new state
 
@@ -850,7 +865,7 @@ view model =
 
 viewCanvas :: Model -> () -> Canvas.Canvas ()  -- Canvas rendering function
 viewCanvas model () = do
-  if model.gameOver
+  if model.gameOver == YesGO
     then do 
       Canvas.fillStyle (Canvas.ColorArg (RGB 0 0 0))  -- Set fill color to black
       let ps = model.player.playerSize
