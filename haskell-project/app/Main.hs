@@ -684,6 +684,13 @@ update MsgGetTime = do                        -- Handle request for current time
 update (MsgSetTime milli) = do                -- Handle received timestamp (main animation loop)
   model <- M.get                              -- Get current model state
 
+  -- Game Over constants
+  let oldPlayer = model.player
+  let goPlayer = oldPlayer { spaceRequest = Blocked }
+  let goTimer = model.gameTimer
+
+  -- New States
+
   let lastMilli = model.lastMilli             -- Get previous frame's timestamp
   let diff = if milli >= lastMilli then milli - lastMilli else 1000 - lastMilli + milli
   -- Calculate time delta, handling millisecond wraparound at 1000
@@ -713,10 +720,9 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
 
   -- Check for Game Over
   let gameOver' = if model.gameOver || collision || gameTimer' <= 0 then True else False
-  
-  M.put $                                     -- Update the model with new state
-    model
-      { time = model.time + diff              -- Accumulate elapsed time
+
+  let modelContinue = model { 
+      time = model.time + diff              -- Accumulate elapsed time
       , lastMilli = milli                     -- Store current timestamp for next frame
       , tick = model.tick + 1                 -- Increment frame counter
       , player = updatedPlayer'
@@ -726,6 +732,23 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       , gameOver = gameOver'
       , gameTimer = gameTimer'
       }
+  
+  let modelGameOver = model { 
+      time = model.time + diff              -- Accumulate elapsed time
+      , lastMilli = milli                     -- Store current timestamp for next frame
+      , tick = model.tick + 1                 -- Increment frame counter
+      , player = goPlayer                     -- prohibit movement and Block bomb requests
+      , bombs = updatedBombs''''
+      , obstacles = updatedObstacles'
+      , score = newScore
+      , gameOver = gameOver'
+      , gameTimer = goTimer
+      }
+  
+  let finalModel = if gameOver' then modelGameOver else modelContinue
+
+  M.put $ finalModel                          -- Update the model with new state
+
   M.issue MsgGetTime                          -- Issue next frame request (continues animation loop)
 
 ---
