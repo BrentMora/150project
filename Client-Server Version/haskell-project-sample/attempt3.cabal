@@ -1,0 +1,19 @@
+cabal-version:   3.14
+name:            attempt3
+version:         0.1.0.0
+license:         NONE
+author:          Juan Felipe Coronel
+maintainer:      juanfelipe.coronel@gmail.com
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall
+
+executable attempt2
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^>=4.20.1.0, miso, containers, jsaddle, websockets, aeson, text, bytestring, network
+    hs-source-dirs:   app
+    default-language: Haskell2010
+    other-modules:    Server, Client, Common
