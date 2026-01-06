@@ -596,7 +596,7 @@ detonateBomb p obs b =
     testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
     -- testBombs should include original bomb
 
-    testBombs' = growBombs testBombs []
+    testBombs' = growBombs obs testBombs []
     -- growbombs according to range
 
     isNotColliding bomb = not $ any (checkBombObstacleCollision bomb) obs
@@ -612,22 +612,61 @@ detonateBomb p obs b =
     (filter isNotColliding testBombs', filter obstaclesNotColliding obs)
     -- filter base don the above conditions
 
-growBombs :: [Bomb] -> [Bomb] -> [Bomb]
-growBombs [] acc = acc
-growBombs (b : bt) acc =
+checkBombConnections :: [Bomb] -> [Obstacle] -> [Bomb]
+checkBombConnections bombs obs =
+  let copyB = bombs
+  in
+    filter (isBombConnected obs copyB) bombs
+
+isBombConnected :: [Obstacle] -> [Bomb] -> Bomb -> Bool
+isBombConnected obs bombs b =
+  case b.bombDirection of
+    Core -> True
+
+    North ->
+      not $ any (\o ->
+        obstacleX o == bombX b &&
+        obstacleY o == bombY b + 50
+      ) obs
+
+    South ->
+      not $ any (\o ->
+        obstacleX o == bombX b &&
+        obstacleY o == bombY b - 50
+      ) obs
+
+    East ->
+      not $ any (\o ->
+        obstacleX o == bombX b + 50 &&
+        obstacleY o == bombY b
+      ) obs
+
+    West ->
+      not $ any (\o ->
+        obstacleX o == bombX b - 50 &&
+        obstacleY o == bombY b
+      ) obs
+
+
+growBombs :: [Obstacle] -> [Bomb] -> [Bomb] -> [Bomb]
+growBombs _ [] acc = acc
+growBombs obs (b : bt) acc =
   let
     newBomb = createbomb b -- new bombs from b, returns b if Core
     oldG = b.growth
     decB = b { growth = b.growth - 1 }
+    zeroedB = b { growth = 0 }
   in
     if b.bombDirection == Core -- createbomb will return itself
-      then growBombs bt (acc ++ [b]) -- append itself, no need to grow
+      then growBombs obs bt (acc ++ [b]) -- append itself, no need to grow
     else if b.growth == 0 -- no growth, createbomb will return itself
-      then growBombs bt (acc ++ [b])
+      then growBombs obs bt (acc ++ [b])
+    else if any (checkBombObstacleCollision b) obs
+      then growBombs obs bt (acc ++ [zeroedB])
     else if b.growth == 1 -- creates new bomb and b.growth will get decremented
-      then growBombs (bt ++ [newBomb]) (acc ++ [decB])
+      then growBombs obs (bt ++ [newBomb]) (acc ++ [decB])
     else
-      growBombs (bt ++ [newBomb] ++ [decB]) acc
+      growBombs obs (bt ++ [newBomb] ++ [decB]) acc
 
 
 createbomb :: Bomb -> Bomb
@@ -955,7 +994,10 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       let (updatedBombs''', updatedObstacles') = updateBombBombDetonation updatedPlayer' (updatedObstacles) updatedBombs''
         -- detonate bombs that touched by other detonated bombs
 
-      let updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
+      let updatedBombsFireUp = checkBombConnections updatedBombs''' (model.obstacles)
+      -- clean up detonated bombs
+
+      let updatedBombs'''' = updateBombRemoval updatedBombsFireUp -- remove detonated bombs
 
         -- Check if player collides with any detonating bomb
       let collision = any (checkCollision updatedPlayer') updatedBombs''''
@@ -1061,7 +1103,7 @@ view model =
           ]
           (\_ -> pure ())                     -- Event handler (unused here)
           (viewCanvas model)                  -- Canvas drawing function
-      , H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.player]  -- Textarea showing model state (debugging)
+      , H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.bombs]  -- Textarea showing model state (debugging)
       ]
 
 viewCanvas :: Model -> () -> Canvas.Canvas ()  -- Canvas rendering function
