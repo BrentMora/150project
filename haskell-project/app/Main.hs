@@ -347,7 +347,7 @@ updatePlayerPlaceBomb isBA p =
       testPlayer = p { bombsHeld = newBH, spaceRequest = Blocked } -- block next tick if request succeeds
 
   in if oldBH > 0           -- if a bomb can be placed
-    && spaceState == Valid   -- if spacekey is being requested
+    && spaceState == Valid  -- if spacekey is being requested
     && isBA                 -- and bomb was successfully added
       then testPlayer       -- bomb can be placed
     else
@@ -733,11 +733,13 @@ updateBombOverlapping p b =
 updatePlayerBombIncrement :: [Bomb] -> Player -> Player
 updatePlayerBombIncrement bombs p =
   let
-    lenB = length bombs
-    oldBH = bombsHeld p
+    lenB = length bombs -- bombs currently active
+    oldBH = bombsHeld p -- bombs that you still have
+    mb = maxbombs p -- maximum bobs placed
   
-  in if lenB == 0 && oldBH < 1
-    then p { bombsHeld = oldBH + 1 }
+  in if lenB < mb && -- if not all possible bombs placed
+    oldBH < mb        -- and bombsHeld not equal to max bombs heldd
+    then p { bombsHeld = mb - lenB } -- bombs held should also be the remainder
     else p
 
 -- Clamp a value between a minimum and maximum
@@ -958,15 +960,15 @@ view model =
   -- trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
-      [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.player]  -- Textarea showing model state (debugging)
-      , H.br_ []                              -- Line break
-      , H.p_ [] [M.text (M.ms (displayTimer model))]
+      [ 
+      H.p_ [] [M.text (M.ms (displayTimer model))]
       , Canvas.canvas                         -- Canvas element for drawing
           [ P.width_ (M.ms screenWidth)       -- Set canvas width attribute
           , P.height_ (M.ms screenHeight)     -- Set canvas height attribute
           ]
           (\_ -> pure ())                     -- Event handler (unused here)
           (viewCanvas model)                  -- Canvas drawing function
+      , H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.player]  -- Textarea showing model state (debugging)
       ]
 
 viewCanvas :: Model -> () -> Canvas.Canvas ()  -- Canvas rendering function
