@@ -1,12 +1,11 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoFieldSelectors #-}
 
 module Server where
 
 import qualified Common
 import Control.Concurrent (MVar, forkIO, modifyMVar, modifyMVar_, newMVar, readMVar, threadDelay)
-import Control.Monad (forM_, forever, when)
+import Control.Monad (forM_, forever, when, foldM)
 import Data.Function ((&))
 import Data.Functor (void)
 import Data.Map (Map)
@@ -30,48 +29,51 @@ screenWidth = 750
 screenHeight :: Double
 screenHeight = 650
 
--- Server state
+-- Server state containing all connected clients and the current game state
 data ServerState = ServerState
-  { clients :: Map.Map Common.PlayerId Client
-  , gameState :: GameState
+  { clients :: Map.Map Common.PlayerId Client  -- Map of player ID to client connection
+  , gameState :: GameState                     -- Current game state
   }
 
--- Client record
+-- Represents a connected client with their ID and WebSocket connection
 data Client = Client
-  { id :: Common.PlayerId
-  , conn :: WS.Connection
+  { id :: Common.PlayerId      -- Unique player ID (1, 2, etc.)
+  , conn :: WS.Connection      -- WebSocket connection to this client
   }
 
 -- Game state
 data GameState = GameState
-  { ticks :: Int
-  , players :: Map Common.PlayerId Common.Player
-  , bombs :: [Common.Bomb]
-  , obstacles :: [Common.Obstacle]
-  , powerups :: [Common.PowerUp]
-  , eventQueue :: [GameEvent]
-  , gameOver :: Common.GameOverFlag
-  , gameTimer :: Float
+  { ticks :: Int                                    -- Frame counter (increments each update, ~60 FPS)
+  , players :: Map Common.PlayerId Common.Player    -- Map of all players in the game
+  , bombs :: [Common.Bomb]                          -- List of all bombs on the map
+  , obstacles :: [Common.Obstacle]                  -- List of all obstacles (walls and blocks)
+  , powerUps :: [Common.PowerUp]                    -- List of all powerups on the map
+  , eventQueue :: [GameEvent]                       -- Queue of events to process this frame
+  , gameOver :: Common.GameOverFlag                 -- Current game over state
+  , gameTimer :: Float                              -- Time remaining in seconds
   , gameStarted :: Bool
   }
   deriving (Show, Eq)
 
--- Game events
+-- Events that can occur in the game
 data GameEvent
-  = NewPlayerEvent Common.PlayerId
-  | PlayerInputEvent Common.PlayerId Common.KeyState
+  = NewPlayerEvent Common.PlayerId                      -- A new player has joined
+  | PlayerInputEvent Common.PlayerId Common.KeyState    -- A player sent keyboard input
   deriving (Show, Eq)
 
 -- Main server entry point
 mainServer :: IO ()
 mainServer = do
   putStrLn "Server is starting..."
+  -- Create an MVar to hold the server state (thread-safe shared state)
   stateMVar <- newMVar initServerState
 
   putStrLn "Main game loop is starting..."
+  -- Fork a background thread that runs the game loop forever at ~60 FPS
   void $ forkIO $ forever $ mainGameLoop stateMVar
 
   putStrLn "Listening process is starting..."
+  -- Start WebSocket server on localhost:15000
   WS.runServer "127.0.0.1" 15000 $ app stateMVar
 
 -- Initial server state
@@ -89,7 +91,7 @@ initGameState =
     , players = Map.empty
     , bombs = []
     , obstacles = initialObstacles
-    , powerups = []
+    , powerUps = []
     , eventQueue = []
     , gameOver = Common.NotGO
     , gameTimer = 60
@@ -199,31 +201,41 @@ initialObstacles =
   , Common.Obstacle 625 575 squareSize squareSize False
   ]
 
--- Handle new connection
+-- Handle new WebSocket connection
 app :: MVar ServerState -> WS.PendingConnection -> IO ()
 app stateMVar pendingConn = do
+  -- Accept the WebSocket connection
   conn <- WS.acceptRequest pendingConn
+  -- Set up ping/pong to keep connection alive (ping every 30 seconds)
   WS.withPingThread conn 30 (pure ()) $ do
+    -- Add the new client to the server state
     maybeClient <- modifyMVar stateMVar $ \serverState -> do
+      -- Calculate the new player number based on current client count
       let newPlayerNum = Map.size serverState.clients + 1
 
+      -- Check if server is full (more than 2 players)
       if newPlayerNum > requiredPlayerCount
-        then pure (serverState, Nothing)
+        then
+          -- Server is full, don't add the client
+          pure (serverState, Nothing)
         else do
           putStrLn $ "Player " <> show newPlayerNum <> " has connected"
 
+          -- Create a new client record
           let newClient = Client newPlayerNum conn
           let newServerState =
                 serverState
                   { clients = Map.insert newPlayerNum newClient serverState.clients
                   , gameState =
                       serverState.gameState
-                        { eventQueue = serverState.gameState.eventQueue <> [NewPlayerEvent newPlayerNum]
+                        { -- Add a NewPlayerEvent to the event queue
+                          eventQueue = serverState.gameState.eventQueue <> [NewPlayerEvent newPlayerNum]
                         }
                   }
 
           pure (newServerState, Just newClient)
 
+    -- If client was added successfully, start listening for their messages
     case maybeClient of
       Just client -> getDataFromClient client stateMVar
       Nothing -> putStrLn "Rejected new client; server is full"
@@ -231,9 +243,11 @@ app stateMVar pendingConn = do
 -- Listen for client messages
 getDataFromClient :: Client -> MVar ServerState -> IO ()
 getDataFromClient client stateMVar = forever $ do
+  -- Receive text data from the client (blocks until data arrives)
   raw <- WS.receiveData client.conn :: IO T.Text
   putStrLn $ "Got data: " <> T.unpack raw
 
+  -- Try to parse the data as ClientInput (keyboard state)
   case Common.textToClientInput raw of
     Nothing -> do
       putStrLn $ "Failed to parse client input: " <> T.unpack raw
@@ -254,9 +268,9 @@ getDataFromClient client stateMVar = forever $ do
 
 startGameIfReady :: GameState -> GameState
 startGameIfReady state
-  | not state.gameStarted && isGameActive state =
-      state { gameStarted = True, gameTimer = 60 }
-  | otherwise = state
+  | not state.gameStarted && isGameActive state = -- game is not started and game is active
+      state { gameStarted = True, gameTimer = 60 } -- start game
+  | otherwise = state -- otherwise do nothing
 
 -- Check if game is active
 isGameActive :: GameState -> Bool
@@ -265,6 +279,7 @@ isGameActive state = Map.size state.players == requiredPlayerCount
 -- Main game loop (~60 FPS)
 mainGameLoop :: MVar ServerState -> IO ()
 mainGameLoop stateMVar = do
+  -- Update the game state (process events, move players, detonate bombs, etc.)
   modifyMVar_ stateMVar $ \serverState -> do
     let newGameState = updateGameState serverState.gameState
     pure $ serverState{gameState = newGameState}
@@ -272,7 +287,7 @@ mainGameLoop stateMVar = do
   broadcastToClients stateMVar
   threadDelay 16666
 
--- Update game state
+-- Update game state -- REFACTOR FOR POWERUPS
 updateGameState :: GameState -> GameState
 updateGameState gameState =
   gameState
@@ -323,8 +338,9 @@ processNextEvent state =
               , Common.xCoords = [25, 75, 125, 175, 225, 275, 325, 375, 425, 475, 525, 575, 625, 675, 725]
               , Common.yCoords = [25, 75, 125, 175, 225, 275, 325, 375, 425, 475, 525, 575, 625]
               , Common.currentDirection = Just Common.DirNone
-              , Common.maxBombs = 0
+              , Common.maxBombs = 1
               , Common.speedUps = 0
+              , Common.fireUps = 0
               }
       state
         { players = Map.insert newPlayerId newPlayer state.players
@@ -514,7 +530,7 @@ placeBombs state =
   let (newBombs, updatedPlayers) = foldl placeBombForPlayer (state.bombs, state.players) (Map.elems state.players)
   in state { bombs = newBombs, players = updatedPlayers }
 
--- Place bomb for a single player
+-- Place bomb for a single player -- REFACTOR FOR MXBOMBS
 placeBombForPlayer :: ([Common.Bomb], Map Common.PlayerId Common.Player) -> Common.Player -> ([Common.Bomb], Map Common.PlayerId Common.Player)
 placeBombForPlayer (bombs, players) p =
   if p.bombsHeld > 0 && p.spaceRequest == Common.Valid
@@ -547,7 +563,7 @@ updateBombTimer b =
      then b { Common.isDetonated = Common.Done }
      else b { Common.timer = oldTime - timeTick }
 
--- Detonate bombs
+-- Detonate bombs -- REFACTOR QUESTION MARK
 detonateBombs :: GameState -> GameState
 detonateBombs state =
   let (newBombs, newObstacles) = foldl processOneBomb ([], state.obstacles) state.bombs

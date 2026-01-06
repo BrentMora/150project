@@ -29,6 +29,8 @@ import GHC.IO (unsafePerformIO)
 import qualified Data.Map as Map
 
 -- Global MVar to hold WebSocket connection
+-- This is initialized empty and filled when connection is established
+-- Allows the WebSocket to be accessed from different parts of the code
 connMVar :: MVar WS.Connection
 connMVar = unsafePerformIO newEmptyMVar
 
