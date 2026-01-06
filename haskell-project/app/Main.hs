@@ -105,7 +105,7 @@ data Player = Player
   , currentDirection :: Maybe Direction    -- Currently pressed direction key (if any)
   , maxbombs :: Int -- maximum number of bombs that can be held
   , speedups :: Double -- number of speedups taken
-  , fireups :: Double -- number of fireups taken
+  , fireups :: Int -- number of fireups taken
   } deriving (Show, Eq)
 
 -- PowerUp structure
@@ -127,6 +127,7 @@ data Bomb = Bomb
   , timer :: Double       -- float timer that ticks down to detonation
   , isOverlapping :: Bool -- checks if it overlaps with player
   , bombDirection :: BombDirection -- which way the explosion is pointing to
+  , growth :: Int         -- how many times the bomb needs to grow in its direction based on fireups taken by player
   } deriving (Show, Eq)
 
 -- Obstacle represents solid blocks that block movement
@@ -471,7 +472,7 @@ updateBomb p bombs =
     bombsH = bombsHeld p
     spaceState = spaceRequest p -- if space was requested
 
-    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3 True Core
+    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3 True Core 0
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
@@ -509,33 +510,34 @@ updateBombTimer b =
       b { timer = oldTime - timeTick }
 
 -- updates Bombs to detonate them, then returns obstacles with updated softblocks (if softblocks were destroyed in the process)
-updateBombDetonate :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
-updateBombDetonate obs bombs = foldl processOneBomb ([], obs) bombs
+updateBombDetonate :: Player -> [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
+updateBombDetonate p obs bombs = foldl processOneBomb ([], obs) bombs
 -- iterate to the left over all bombs, detonate one by one, check if softblocks were hit
   where
     processOneBomb (accBombs, accObs) bomb =                -- accBombs -> accumulates bombs, accObs -> accumulates new Obstacles
       if isDetonated bomb == Ticking && timer bomb <= 0     -- if bomb is Ticking and timer is up, then detonate
-        then let (newBombs, newObs) = detonateBomb accObs bomb
+        then let (newBombs, newObs) = detonateBomb p accObs bomb
              in (accBombs ++ newBombs, newObs)
         else (accBombs ++ [bomb], accObs)                   -- else, (bomb is not meant to be deontated) just add the original bomb
 
 -- detonates Bombs if hit by Detonating bomb
-updateBombBombDetonation :: [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
-updateBombBombDetonation obs bombs = foldl processOneBomb ([], obs) bombs
+updateBombBombDetonation :: Player -> [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
+updateBombBombDetonation p obs bombs = foldl processOneBomb ([], obs) bombs
 -- iterates to the left over all bombs, detonate if they are touched by detonating bombs
   where
     processOneBomb (accBombs, accObs) bomb =
       if any (checkBombBombCollision bomb) accBombs             -- if the bomb is touched by any detonating bomb
-        then let (newBombs, newObs) = detonateBomb accObs bomb  -- detonate the bomb
+        then let (newBombs, newObs) = detonateBomb p accObs bomb  -- detonate the bomb
              in (accBombs ++ newBombs, newObs)
         else (accBombs ++ [bomb], accObs)                       -- else, do nothing
 
 -- returns new bomb state and new obstacle state (those that should be destroyed)
-detonateBomb :: [Obstacle] -> Bomb -> ([Bomb], [Obstacle])
-detonateBomb obs b =
+detonateBomb :: Player -> [Obstacle] -> Bomb -> ([Bomb], [Obstacle])
+detonateBomb p obs b =
   let
     bX = bombX b
-    bY = bombY b 
+    bY = bombY b
+    range = fireups p
 
     -- create four new bombs relative to source bomb's orthogonal dircetions
 
@@ -549,6 +551,7 @@ detonateBomb obs b =
       , timer = 1
       , isOverlapping = False
       , bombDirection = North
+      , growth = range - 1
      }
     
     newBombDown = Bomb {
@@ -561,6 +564,7 @@ detonateBomb obs b =
       , timer = 1
       , isOverlapping = False
       , bombDirection = South
+      , growth = range - 1
     }
 
     newBombLeft = Bomb {
@@ -573,6 +577,7 @@ detonateBomb obs b =
       , timer = 1
       , isOverlapping = False
       , bombDirection = West
+      , growth = range - 1
     }
 
     newBombRight = Bomb {
@@ -585,27 +590,114 @@ detonateBomb obs b =
       , timer = 1
       , isOverlapping = False
       , bombDirection = East
+      , growth = range - 1
     }
 
     testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
     -- testBombs should include original bomb
+
+    testBombs' = growBombs testBombs []
+    -- growbombs according to range
 
     isNotColliding bomb = not $ any (checkBombObstacleCollision bomb) obs
     -- isNotColliding checks if a new bomb will overlap with an obstacle
     
     obstaclesNotColliding o =
       isHardBlock o
-      || -- does not overlap with any of the newBombs
-      not (checkBombObstacleCollision newBombUp o)
-      && not (checkBombObstacleCollision newBombDown o)
-      && not (checkBombObstacleCollision newBombLeft o)
-      && not (checkBombObstacleCollision newBombRight o)
+      || not ( any ( flip checkBombObstacleCollision o ) testBombs' )
     -- obstacleNotColliding checks for obstacles that are hard blocks or not colliding with newBombs
     -- only softblocks that collided with the detonating bombs should be removed
 
   in
-    (filter isNotColliding testBombs, filter obstaclesNotColliding obs)
+    (filter isNotColliding testBombs', filter obstaclesNotColliding obs)
     -- filter base don the above conditions
+
+growBombs :: [Bomb] -> [Bomb] -> [Bomb]
+growBombs [] acc = acc
+growBombs (b : bt) acc =
+  let
+    newBomb = createbomb b -- new bombs from b, returns b if Core
+    oldG = b.growth
+    decB = b { growth = b.growth - 1 }
+  in
+    if b.bombDirection == Core -- createbomb will return itself
+      then growBombs bt (acc ++ [b]) -- append itself, no need to grow
+    else if b.growth == 0 -- no growth, createbomb will return itself
+      then growBombs bt (acc ++ [b])
+    else if b.growth == 1 -- creates new bomb and b.growth will get decremented
+      then growBombs (bt ++ [newBomb]) (acc ++ [decB])
+    else
+      growBombs (bt ++ [newBomb] ++ [decB]) acc
+
+
+createbomb :: Bomb -> Bomb
+createbomb b =
+  let
+    oldG = b.growth
+    newBombUp = Bomb { 
+      bombX = bombX b
+      , bombY = bombY b - 50
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = squareSize
+      , isDetonated = Detonating
+      , timer = 1
+      , isOverlapping = False
+      , bombDirection = North
+      , growth = oldG - 1
+     }
+    
+    newBombDown = Bomb {
+      bombX = bombX b
+      , bombY = bombY b + 50
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = squareSize
+      , isDetonated = Detonating
+      , timer = 1
+      , isOverlapping = False
+      , bombDirection = South
+      , growth = oldG - 1
+    }
+
+    newBombLeft = Bomb {
+      bombX = bombX b - 50
+      , bombY = bombY b
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = squareSize
+      , isDetonated = Detonating
+      , timer = 1
+      , isOverlapping = False
+      , bombDirection = West
+      , growth = oldG - 1
+    }
+
+    newBombRight = Bomb {
+      bombX = bombX b + 50
+      , bombY = bombY b
+      , bombVelX = 0
+      , bombVelY = 0
+      , bombSize = squareSize
+      , isDetonated = Detonating
+      , timer = 1
+      , isOverlapping = False
+      , bombDirection = East
+      , growth = oldG - 1
+    }
+  in if
+    b.bombDirection == Core
+    then b
+    else if b.growth == 0
+      then b
+    else if b.bombDirection == North
+      then newBombUp
+    else if b.bombDirection == South
+      then newBombDown
+    else if b.bombDirection == West
+      then newBombLeft
+    else -- East
+      newBombRight
 
 -- remove bombs that blew up
 updateBombRemoval :: [Bomb] -> [Bomb]
@@ -857,10 +949,10 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
             
       let updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
-      let (updatedBombs'', updatedObstacles) = updateBombDetonate (obstacles model) updatedBombs'
+      let (updatedBombs'', updatedObstacles) = updateBombDetonate updatedPlayer' (obstacles model) updatedBombs'
         -- detonate depleted bomb timers and destroy appropriate softblocks
             
-      let (updatedBombs''', updatedObstacles') = updateBombBombDetonation (updatedObstacles) updatedBombs''
+      let (updatedBombs''', updatedObstacles') = updateBombBombDetonation updatedPlayer' (updatedObstacles) updatedBombs''
         -- detonate bombs that touched by other detonated bombs
 
       let updatedBombs'''' = updateBombRemoval updatedBombs''' -- remove detonated bombs
