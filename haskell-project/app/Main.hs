@@ -363,6 +363,7 @@ updatePlayer obstacles bombs p =
       dir = currentDirection p -- direction request
       newX = playerX p + vx
       newY = playerY p + vy
+      sucount = speedups p
 
       -- Calculate desired new target
       newTargetX = computeTarget newX (xCoords p)
@@ -377,7 +378,7 @@ updatePlayer obstacles bombs p =
       -- Check if new position would collide with any ticking bombs
       wouldCollideB = any (checkPlayerBombCollision testPlayer) bombs
 
-      speed = 5
+      speed = 5 + ( 2 * sucount )
 
       -- Horizontal cases
       vx =
