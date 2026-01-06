@@ -21,6 +21,7 @@ import Debug.Trace (trace)                    -- Debug tracing utility
 
 -- Other Imports
 import Data.List (minimumBy)
+import Data.List (find, delete)
 
 -- =========================
 -- Constants
@@ -65,6 +66,9 @@ handleKey intSet
 -- Data
 -- =========================
 
+data PowerUpTypes = FireUp | SpeedUp | BombUp
+  deriving (Show, Eq)
+
 data GameOverFlag = NotGO | YesGO | Render
   deriving (Show, Eq)
 
@@ -74,7 +78,10 @@ data Request = Valid | Blocked | Released
 data DetonationStatus = Ticking | Detonating | Done
   deriving (Show, Eq)
 
-data Direction                                -- Enumeration of possible movement directions
+data BombDirection = North | South | East | West | Core -- where is the bomb pointing to (core means center of explosion)
+  deriving (Show, Eq)
+
+data Direction                        -- Enumeration of possible movement directions
   = DirUp
   | DirDown
   | DirLeft
@@ -96,6 +103,17 @@ data Player = Player
   , xCoords :: [Double]    -- list of X coordinates for player to target
   , yCoords :: [Double]    -- list of Y coordinates for player to target
   , currentDirection :: Maybe Direction    -- Currently pressed direction key (if any)
+  , maxbombs :: Int -- maximum number of bombs that can be held
+  , speedups :: Double -- number of speedups taken
+  , fireups :: Double -- number of fireups taken
+  } deriving (Show, Eq)
+
+-- PowerUp structure
+data PowerUp = PowerUp
+  { powerupX :: Double -- x pos
+  , powerupY :: Double -- y pos
+  , powerupSize :: Double -- size
+  , powerupType :: PowerUpTypes -- type of powerup
   } deriving (Show, Eq)
 
 -- Bomb represents a red square that can detonate into player-hurting red squares
@@ -108,6 +126,7 @@ data Bomb = Bomb
   , isDetonated :: DetonationStatus  -- boolean to track detonating status
   , timer :: Double       -- float timer that ticks down to detonation
   , isOverlapping :: Bool -- checks if it overlaps with player
+  , bombDirection :: BombDirection -- which way the explosion is pointing to
   } deriving (Show, Eq)
 
 -- Obstacle represents solid blocks that block movement
@@ -129,6 +148,7 @@ data Model = Model                            -- Application state
   , obstacles :: [Obstacle]                   -- List of solid obstacle blocks
   , gameOver :: GameOverFlag                  -- Whether the game has ended
   , gameTimer :: Float                        -- General game timer
+  , powerups :: [PowerUp]                     -- list of powerups in the game
   }
   deriving (Show, Eq)                         
 
@@ -156,6 +176,9 @@ initialPlayer = Player
     [25, 75, 125, 175, 225, 275, 
     325, 375, 425, 475, 525, 575, 625]
   , currentDirection = Just DirNone  -- not moving
+  , maxbombs = 1 -- 1 bomb by default
+  , speedups = 0  -- no speed bonus, just base
+  , fireups = 1 -- range of 1
   }
 
 
@@ -264,6 +287,10 @@ initModel =
       ]
     , gameOver = NotGO -- Game starts running
     , gameTimer = 60    -- Starts with 60 seconds
+    , powerups =
+       [ PowerUp 75 75 squareSize BombUp
+       , PowerUp 125 75 squareSize SpeedUp
+       , PowerUp 175 50 squareSize FireUp ] -- empty list of powerups -- HOLD
     }
 
 -- =========================
@@ -443,7 +470,7 @@ updateBomb p bombs =
     bombsH = bombsHeld p
     spaceState = spaceRequest p -- if space was requested
 
-    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3 True
+    newBomb = Bomb newBX newBY 0 0 squareSize Ticking 3 True Core
     -- newBomb is a new bomb that has player coordinates and unmoving
     -- unmoving == not detonating
 
@@ -520,6 +547,7 @@ detonateBomb obs b =
       , isDetonated = Detonating
       , timer = 1
       , isOverlapping = False
+      , bombDirection = North
      }
     
     newBombDown = Bomb {
@@ -531,6 +559,7 @@ detonateBomb obs b =
       , isDetonated = Detonating
       , timer = 1
       , isOverlapping = False
+      , bombDirection = South
     }
 
     newBombLeft = Bomb {
@@ -542,6 +571,7 @@ detonateBomb obs b =
       , isDetonated = Detonating
       , timer = 1
       , isOverlapping = False
+      , bombDirection = West
     }
 
     newBombRight = Bomb {
@@ -553,6 +583,7 @@ detonateBomb obs b =
       , isDetonated = Detonating
       , timer = 1
       , isOverlapping = False
+      , bombDirection = East
     }
 
     testBombs = [newBombUp, newBombDown, newBombLeft, newBombRight, b]
@@ -715,6 +746,64 @@ clamp :: Ord a => a -> a -> a -> a
 clamp minV maxV = max minV . min maxV
 
 -- =========================
+-- PowerUps Functions
+-- =========================
+
+checkPlayerPowerUpCollision :: Player -> PowerUp -> Bool
+checkPlayerPowerUpCollision p pu =
+  let px = playerX p
+      py = playerY p
+      ps = playerSize p
+      pux = powerupX pu
+      puy = powerupY pu
+      puw = powerupSize pu
+      puh = powerupSize pu
+      
+      -- Calculate edges of each rectangle
+      pLeft = px - ps / 2
+      pRight = px + ps / 2
+      pTop = py - ps / 2
+      pBottom = py + ps / 2
+      
+      puLeft = pux - puw / 2
+      puRight = pux + puw / 2
+      puTop = puy - puh / 2
+      puBottom = puy + puh / 2
+      
+  in pRight > puLeft && pLeft < puRight &&
+     pBottom > puTop && pTop < puBottom
+
+addPowerUptoPlayer :: Player -> PowerUp -> Player
+addPowerUptoPlayer p pu =
+  let
+    puType = powerupType pu
+    oldMB = maxbombs p
+    oldSU = speedups p
+    oldFU = fireups p
+
+  in if puType == FireUp
+    then p { fireups = oldFU + 1 }
+    else if puType == BombUp
+      then p { maxbombs = oldMB + 1 }
+      else p { speedups = oldSU + 1 }
+
+updatePlayerPowerUps :: Player -> [PowerUp] -> (Player, [PowerUp])
+updatePlayerPowerUps p powerups =
+  let
+    powerupTaken :: Maybe PowerUp
+    powerupTaken = find (checkPlayerPowerUpCollision p) powerups
+  in
+    case powerupTaken of
+      Just pu ->
+        ( addPowerUptoPlayer p pu
+        , delete pu powerups
+        )
+      Nothing ->
+        ( p
+        , powerups
+        )
+
+-- =========================
 -- Update Functions
 -- =========================
 
@@ -752,8 +841,10 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
     then do
       M.issue MsgGetTime
     else do
+      
+      let (powerUppedPlayer, updatedPowerUps) = updatePlayerPowerUps ( player model ) ( powerups model )
 
-      let updatedPlayerBombIncrement = updatePlayerBombIncrement (bombs model) (player model)
+      let updatedPlayerBombIncrement = updatePlayerBombIncrement (bombs model) (powerUppedPlayer)
   
       let updatedBombsForColl = map (updateBombOverlapping (updatedPlayerBombIncrement)) (bombs model)
 
@@ -799,6 +890,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
           , obstacles = updatedObstacles'
           , gameOver = gameOver'
           , gameTimer = gameTimer'
+          , powerups = updatedPowerUps
           }
       
       let modelGameOver = model { 
@@ -866,9 +958,9 @@ view model =
   -- trace (show model.tick <> " " <> show model.time) $  -- Debug trace: logs tick count and time to console
     H.div_                                    -- Container div
       []                                      -- No attributes
-      [ -- H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.player]  -- Textarea showing model state (debugging)
-      -- , H.br_ []                              -- Line break
-      H.p_ [] [M.text (M.ms (displayTimer model))]
+      [ H.textarea_ [P.rows_ "20", P.cols_ "100"] [M.text $ M.ms $ show model.player]  -- Textarea showing model state (debugging)
+      , H.br_ []                              -- Line break
+      , H.p_ [] [M.text (M.ms (displayTimer model))]
       , Canvas.canvas                         -- Canvas element for drawing
           [ P.width_ (M.ms screenWidth)       -- Set canvas width attribute
           , P.height_ (M.ms screenHeight)     -- Set canvas height attribute
@@ -903,6 +995,9 @@ viewCanvas model () = do
     
     -- Draw bombs
     mapM_ drawBombs model.bombs
+
+    -- Draw powerups
+    mapM_ drawPowerUps model.powerups
     
     -- Blue box, 50x50 (player - drawn last so it appears on top)
     Canvas.fillStyle (Canvas.ColorArg (RGB 51 124 179))  -- Set fill color to blue
@@ -927,3 +1022,13 @@ viewCanvas model () = do
         else Canvas.fillStyle (Canvas.ColorArg (RGB 193 35 35))        -- brighter red for detonating
       
       Canvas.fillRect (b.bombX - 25, b.bombY - 25, b.bombSize, b.bombSize)
+    
+    drawPowerUps :: PowerUp -> Canvas.Canvas () -- helper function to draw powerups
+    drawPowerUps pwu = do
+      if pwu.powerupType == FireUp
+        then Canvas.fillStyle (Canvas.ColorArg (RGB 255 0 119)) -- magenta
+        else if pwu.powerupType == SpeedUp
+          then Canvas.fillStyle (Canvas.ColorArg (RGB 0 255 255)) -- light blue
+          else Canvas.fillStyle (Canvas.ColorArg (RGB 255 205 0)) -- light orange
+      
+      Canvas.fillRect (pwu.powerupX - 25, pwu.powerupY - 26, pwu.powerupSize, pwu.powerupSize)
