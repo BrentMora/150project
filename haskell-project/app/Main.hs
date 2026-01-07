@@ -293,9 +293,7 @@ initModel =
     , gameOver = NotGO -- Game starts running
     , gameTimer = 60    -- Starts with 60 seconds
     , powerups =
-       [ PowerUp 75 75 squareSize FireUp
-       , PowerUp 125 75 squareSize SpeedUp
-       , PowerUp 175 75 squareSize BombUp ] -- empty list of powerups -- HOLD
+       [] -- empty list of powerups -- HOLD
     }
 
 -- =========================
