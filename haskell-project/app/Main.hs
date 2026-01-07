@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE NoFieldSelectors #-}
 
 module Main where
 
@@ -13,5 +12,5 @@ main = do
   print args
   case args of
     ["--host"] -> mainServer
-    [ip, port] -> mainClient ip (read port)
-    _ -> putStrLn "Usage: program --host  OR  program <ip> <port>"
+    [] -> mainClient "127.0.0.1" 15000
+    _ -> putStrLn "Usage: program        (start client)\n       program --host (start server)"

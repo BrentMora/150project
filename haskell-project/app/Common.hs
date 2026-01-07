@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NoFieldSelectors #-}
 
 module Common where
 
@@ -29,12 +28,12 @@ data Request = Valid | Blocked | Released
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
 
 data Player = Player
-  { id :: PlayerId
-  , x :: Double
-  , y :: Double
-  , velX :: Double
-  , velY :: Double
-  , size :: Double
+  { playerId :: PlayerId
+  , playerX :: Double
+  , playerY :: Double
+  , playerVelX :: Double
+  , playerVelY :: Double
+  , playerSize :: Double
   , bombsHeld :: Int
   , targetX :: Double
   , targetY :: Double
@@ -47,19 +46,19 @@ data Player = Player
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
 
 data PowerUp = PowerUp
-  { x :: Double
-  , y :: Double
-  , size :: Double
+  { powerupX :: Double
+  , powerupY :: Double
+  , powerupSize :: Double
   , powerupType :: PowerUpType
   }
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
 
 data Bomb = Bomb
-  { x :: Double
-  , y :: Double
-  , velX :: Double
-  , velY :: Double
-  , size :: Double
+  { bombX :: Double
+  , bombY :: Double
+  , bombVelX :: Double
+  , bombVelY :: Double
+  , bombSize :: Double
   , isDetonated :: DetonationStatus
   , timer :: Double
   , isOverlapping :: Bool
@@ -69,10 +68,10 @@ data Bomb = Bomb
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
 
 data Obstacle = Obstacle
-  { x :: Double
-  , y :: Double
-  , width :: Double
-  , height :: Double
+  { obstacleX :: Double
+  , obstacleY :: Double
+  , obstacleWidth :: Double
+  , obstacleHeight :: Double
   , isHardBlock :: Bool
   }
   deriving (Show, Eq, FromJSON, ToJSON, Generic)
