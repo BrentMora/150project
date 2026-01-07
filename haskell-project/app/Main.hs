@@ -293,9 +293,9 @@ initModel =
     , gameOver = NotGO -- Game starts running
     , gameTimer = 60    -- Starts with 60 seconds
     , powerups =
-       [ PowerUp 75 75 squareSize BombUp
+       [ PowerUp 75 75 squareSize FireUp
        , PowerUp 125 75 squareSize SpeedUp
-       , PowerUp 175 50 squareSize FireUp ] -- empty list of powerups -- HOLD
+       , PowerUp 175 75 squareSize BombUp ] -- empty list of powerups -- HOLD
     }
 
 -- =========================
@@ -513,31 +513,30 @@ updateBombTimer b =
     else 
       b { timer = oldTime - timeTick }
 
--- updates Bombs to detonate them, then returns obstacles with updated softblocks (if softblocks were destroyed in the process)
-updateBombDetonate :: Player -> [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
-updateBombDetonate p obs bombs = foldl processOneBomb ([], obs) bombs
--- iterate to the left over all bombs, detonate one by one, check if softblocks were hit
+-- updates Bombs to detonate them, then returns obstacles with updated softblocks and powerups (if softblocks and powerups were destroyed in the process)
+updateBombDetonate :: Player -> [Obstacle] -> [PowerUp] -> [Bomb] -> ([Bomb], [Obstacle], [PowerUp])
+updateBombDetonate p obs pups bombs = foldl processOneBomb ([], obs, pups) bombs
   where
-    processOneBomb (accBombs, accObs) bomb =                -- accBombs -> accumulates bombs, accObs -> accumulates new Obstacles
-      if isDetonated bomb == Ticking && timer bomb <= 0     -- if bomb is Ticking and timer is up, then detonate
-        then let (newBombs, newObs) = detonateBomb p accObs bomb
-             in (accBombs ++ newBombs, newObs)
-        else (accBombs ++ [bomb], accObs)                   -- else, (bomb is not meant to be deontated) just add the original bomb
+    processOneBomb (accBombs, accObs, accPups) bomb =
+      if isDetonated bomb == Ticking && timer bomb <= 0
+        then let (newBombs, newObs, newPups) = detonateBomb p accObs accPups bomb
+             in (accBombs ++ newBombs, newObs, newPups)
+        else (accBombs ++ [bomb], accObs, accPups)
 
 -- detonates Bombs if hit by Detonating bomb
-updateBombBombDetonation :: Player -> [Obstacle] -> [Bomb] -> ([Bomb], [Obstacle])
-updateBombBombDetonation p obs bombs = foldl processOneBomb ([], obs) bombs
+updateBombBombDetonation :: Player -> [Obstacle] -> [PowerUp] -> [Bomb] -> ([Bomb], [Obstacle], [PowerUp])
+updateBombBombDetonation p obs pups bombs = foldl processOneBomb ([], obs, pups) bombs
 -- iterates to the left over all bombs, detonate if they are touched by detonating bombs
   where
-    processOneBomb (accBombs, accObs) bomb =
+    processOneBomb (accBombs, accObs, accPups) bomb =
       if any (checkBombBombCollision bomb) accBombs             -- if the bomb is touched by any detonating bomb
-        then let (newBombs, newObs) = detonateBomb p accObs bomb  -- detonate the bomb
-             in (accBombs ++ newBombs, newObs)
-        else (accBombs ++ [bomb], accObs)                       -- else, do nothing
+        then let (newBombs, newObs, newPups) = detonateBomb p accObs accPups bomb  -- detonate the bomb
+             in (accBombs ++ newBombs, newObs, newPups)
+        else (accBombs ++ [bomb], accObs, accPups)              -- else, do nothing
 
 -- returns new bomb state and new obstacle state (those that should be destroyed)
-detonateBomb :: Player -> [Obstacle] -> Bomb -> ([Bomb], [Obstacle])
-detonateBomb p obs b =
+detonateBomb :: Player -> [Obstacle] -> [PowerUp] -> Bomb -> ([Bomb], [Obstacle], [PowerUp])
+detonateBomb p obs pups b =
   let
     bX = bombX b
     bY = bombY b
@@ -603,6 +602,9 @@ detonateBomb p obs b =
     testBombs' = growBombs obs testBombs []
     -- growbombs according to range
 
+    -- remove powerups
+    powerUpsRemain pw = not $ any (flip checkBombPowerUpCollision pw) testBombs'
+
     isNotColliding bomb = not $ any (checkBombObstacleCollision bomb) obs
     -- isNotColliding checks if a new bomb will overlap with an obstacle
     
@@ -613,8 +615,52 @@ detonateBomb p obs b =
     -- only softblocks that collided with the detonating bombs should be removed
 
   in
-    (filter isNotColliding testBombs', filter obstaclesNotColliding obs)
+    (filter isNotColliding testBombs', filter obstaclesNotColliding obs, filter powerUpsRemain pups)
     -- filter base don the above conditions
+
+-- Check if bomb collides with a powerup
+checkBombPowerUpCollision :: Bomb -> PowerUp -> Bool
+checkBombPowerUpCollision b obs =
+  let bx = bombX b
+      by = bombY b
+      bs = bombSize b
+      ox = powerupX obs
+      oy = powerupY obs
+      ow = squareSize
+      oh = squareSize
+      
+      bLeft = bx - bs / 2
+      bRight = bx + bs / 2
+      bTop = by - bs / 2
+      bBottom = by + bs / 2
+      
+      oLeft = ox - ow / 2
+      oRight = ox + ow / 2
+      oTop = oy - oh / 2
+      oBottom = oy + oh / 2
+      
+  in bRight > oLeft && bLeft < oRight &&
+     bBottom > oTop && bTop < oBottom
+
+growBombs :: [Obstacle] -> [Bomb] -> [Bomb] -> [Bomb]
+growBombs _ [] acc = acc
+growBombs obs (b : bt) acc =
+  let
+    newBomb = createbomb b -- new bombs from b, returns b if Core
+    oldG = b.growth
+    decB = b { growth = b.growth - 1 }
+    zeroedB = b { growth = 0 }
+  in
+    if b.bombDirection == Core -- createbomb will return itself
+      then growBombs obs bt (acc ++ [b]) -- append itself, no need to grow
+    else if b.growth == 0 -- no growth, createbomb will return itself
+      then growBombs obs bt (acc ++ [b])
+    else if any (checkBombObstacleCollision b) obs
+      then growBombs obs bt (acc ++ [zeroedB])
+    else if b.growth == 1 -- creates new bomb and b.growth will get decremented
+      then growBombs obs (bt ++ [newBomb]) (acc ++ [decB])
+    else
+      growBombs obs (bt ++ [newBomb] ++ [decB]) acc
 
 checkBombConnections :: [Bomb] -> [Obstacle] -> [Bomb]
 checkBombConnections bombs obs =
@@ -650,27 +696,6 @@ isBombConnected obs bombs b =
         obstacleX o == bombX b - 50 &&
         obstacleY o == bombY b
       ) obs
-
-
-growBombs :: [Obstacle] -> [Bomb] -> [Bomb] -> [Bomb]
-growBombs _ [] acc = acc
-growBombs obs (b : bt) acc =
-  let
-    newBomb = createbomb b -- new bombs from b, returns b if Core
-    oldG = b.growth
-    decB = b { growth = b.growth - 1 }
-    zeroedB = b { growth = 0 }
-  in
-    if b.bombDirection == Core -- createbomb will return itself
-      then growBombs obs bt (acc ++ [b]) -- append itself, no need to grow
-    else if b.growth == 0 -- no growth, createbomb will return itself
-      then growBombs obs bt (acc ++ [b])
-    else if any (checkBombObstacleCollision b) obs
-      then growBombs obs bt (acc ++ [zeroedB])
-    else if b.growth == 1 -- creates new bomb and b.growth will get decremented
-      then growBombs obs (bt ++ [newBomb]) (acc ++ [decB])
-    else
-      growBombs obs (bt ++ [newBomb] ++ [decB]) acc
 
 
 createbomb :: Bomb -> Bomb
@@ -1026,10 +1051,10 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       let updatedPlayer' = updatePlayerPlaceBomb isBombAdded updatedPlayer   -- Update player again for bombsHeld updating
             
       let updatedBombs' = map updateBombTimer updatedBombs  -- decrement bombTimers
-      let (updatedBombs'', updatedObstacles) = updateBombDetonate updatedPlayer' (obstacles model) updatedBombs'
+      let (updatedBombs'', updatedObstacles, updatePwP) = updateBombDetonate updatedPlayer' (obstacles model) updatedPowerUps updatedBombs'
         -- detonate depleted bomb timers and destroy appropriate softblocks
             
-      let (updatedBombs''', updatedObstacles') = updateBombBombDetonation updatedPlayer' (updatedObstacles) updatedBombs''
+      let (updatedBombs''', updatedObstacles', updatePwP') = updateBombBombDetonation updatedPlayer' (updatedObstacles) updatePwP updatedBombs''
         -- detonate bombs that touched by other detonated bombs
 
       let updatedBombsFireUp = checkBombConnections updatedBombs''' (model.obstacles)
@@ -1043,7 +1068,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
       -- Generate pseudo-random numbers using tick as seed
       let randomNumbers = [pseudoRandom (model.tick) i | i <- [0..length removedSoftBlocks - 1]]
       let newPowerUps = getNewPowerUpsPure randomNumbers removedSoftBlocks
-      let updatedPowerUps' = updatedPowerUps ++ newPowerUps
+      let updatePwP'' = updatePwP' ++ newPowerUps
 
         -- Check if player collides with any detonating bomb
       let collision = any (checkCollision updatedPlayer') updatedBombs''''
@@ -1073,7 +1098,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
           , obstacles = updatedObstacles'
           , gameOver = gameOver'
           , gameTimer = gameTimer'
-          , powerups = updatedPowerUps'
+          , powerups = updatePwP''
           }
       
       let modelGameOver = model { 
@@ -1085,6 +1110,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
           , obstacles = updatedObstacles'
           , gameOver = gameOver'
           , gameTimer = goTimer
+          , powerups = model.powerups
           }
       
       let finalModel = if gameOver' == YesGO
