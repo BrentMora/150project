@@ -72,7 +72,9 @@ initGameState =
     , players = Map.empty
     , bombs = []
     , obstacles = initialObstacles
-    , powerups = []
+    , powerups = [ Common.PowerUp 75 75 50 Common.FireUp
+        , Common.PowerUp 125 75 50 Common.BombUp
+        , Common.PowerUp 175 75 50 Common.SpeedUp ]
     , gameTimer = 60.0
     , gameOverFlags = Map.empty
     , eventQueue = []
