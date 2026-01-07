@@ -297,7 +297,7 @@ viewCanvas model canvasState = do
       -- Draw players
       forM_ (Map.elems (Common.players vd)) $ \player -> do
         Canvas.drawImage' (csPlayerImg canvasState, Common.playerX player - 15, Common.playerY player - 15, Common.playerSize player, Common.playerSize player)
-      
+
       -- Draw timer
       Canvas.fillStyle (Canvas.ColorArg (RGB 255 255 255))
       Canvas.font "20px Arial"

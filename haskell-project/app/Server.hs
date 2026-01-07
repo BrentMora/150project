@@ -47,16 +47,16 @@ data GameEvent
   | PlayerInputEvent Common.PlayerId Common.KeyState
   deriving (Show, Eq)
 
-mainServer :: IO ()
-mainServer = do
-  putStrLn "Server is starting..."
+mainServer :: Int -> IO ()
+mainServer port = do
+  putStrLn $ "Server is starting on port " ++ show port ++ "..."
   stateMVar <- newMVar initServerState
 
   putStrLn "Main game loop is starting..."
   void $ forkIO $ forever $ mainGameLoop stateMVar
 
-  putStrLn "Listening process is starting..."
-  WS.runServer "127.0.0.1" 15000 $ app stateMVar
+  putStrLn $ "Listening on 127.0.0.1:" ++ show port ++ "..."
+  WS.runServer "127.0.0.1" port $ app stateMVar
 
 initServerState :: ServerState
 initServerState =

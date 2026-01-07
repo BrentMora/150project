@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoFieldSelectors #-}
 
 module Main where
 
@@ -11,6 +12,6 @@ main = do
   args <- getArgs
   print args
   case args of
-    ["--host"] -> mainServer
-    [] -> mainClient "127.0.0.1" 15000
-    _ -> putStrLn "Usage: program        (start client)\n       program --host (start server)"
+    ["--host", portStr] -> mainServer (read portStr)
+    [ip, portStr] -> mainClient ip (read portStr)
+    _ -> pure ()
