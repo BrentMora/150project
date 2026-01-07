@@ -182,14 +182,14 @@ update (MsgOnMessage newViewData) = do
     -- Bomb detonation sound
     when (detonatingCount > lastDetonationCount model) $ do
       cons <- JSaddle.jsg ("Audio" :: String)
-      audio <- JSaddle.new cons ["resources/bomb_detonate.wav" :: String]
+      audio <- JSaddle.new cons ["resources/bomb_detonate.mp3" :: String]
       _ <- audio JSaddle.# ("play" :: String) $ ()
       pure ()
     
     -- Powerup pickup sound
     when (powerUpCount < lastPowerUpCount model && myPlayerId model == newPlayerId) $ do
       cons <- JSaddle.jsg ("Audio" :: String)
-      audio <- JSaddle.new cons ["resources/powerup_pickup.wav" :: String]
+      audio <- JSaddle.new cons ["resources/powerup_pickup.mp3" :: String]
       _ <- audio JSaddle.# ("play" :: String) $ ()
       pure ()
     
@@ -202,7 +202,7 @@ update (MsgOnMessage newViewData) = do
         let isNowDead = Map.lookup pid (Common.gameOverFlags newViewData) == Just True
         when (wasAlive && isNowDead) $ do
           cons <- JSaddle.jsg ("Audio" :: String)
-          audio <- JSaddle.new cons ["resources/player_dies.wav" :: String]
+          audio <- JSaddle.new cons ["resources/player_dies.mp3" :: String]
           _ <- audio JSaddle.# ("play" :: String) $ ()
           pure ()
       Nothing -> pure ()
