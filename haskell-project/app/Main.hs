@@ -22,6 +22,10 @@ import Debug.Trace (trace)                    -- Debug tracing utility
 -- Other Imports
 import Data.List (minimumBy)
 import Data.List (find, delete)
+import System.Random (randomRIO)
+import Data.List ( (\\) )
+import Data.Maybe (catMaybes)
+import Control.Monad.IO.Class (liftIO)
 
 -- =========================
 -- Constants
@@ -937,6 +941,40 @@ updatePlayerPowerUps p powerups =
         , powerups
         )
 
+isPowerUp :: Int -> Bool
+isPowerUp n = ( n `mod` 10 ) == 1
+
+selectPowerUp :: Int -> PowerUpTypes
+selectPowerUp n = 
+  let
+    selector = n `mod` 3
+  in
+    if
+      selector == 0
+      then FireUp
+      else if selector == 1
+        then SpeedUp
+        else BombUp
+
+getNewPowerUp :: Int -> Obstacle -> Maybe PowerUp
+getNewPowerUp n o =
+  if isPowerUp n
+    then 
+      Just ( PowerUp 
+      { powerupX = o.obstacleX
+      , powerupY = o.obstacleY
+      , powerupSize = 50
+      , powerupType = selectPowerUp n
+      } )
+  else Nothing
+
+getNewPowerUpsPure :: [Int] -> [Obstacle] -> [PowerUp]
+getNewPowerUpsPure randoms obstacles = 
+  catMaybes $ zipWith getNewPowerUp randoms obstacles
+
+pseudoRandom :: Int -> Int -> Int
+pseudoRandom seed offset = ((seed + offset) * 1103515245 + 12345) `mod` 10
+
 -- =========================
 -- Update Functions
 -- =========================
@@ -999,6 +1037,14 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
 
       let updatedBombs'''' = updateBombRemoval updatedBombsFireUp -- remove detonated bombs
 
+      let removedSoftBlocks = model.obstacles \\ updatedObstacles'
+      -- list of removed obstacles
+
+      -- Generate pseudo-random numbers using tick as seed
+      let randomNumbers = [pseudoRandom (model.tick) i | i <- [0..length removedSoftBlocks - 1]]
+      let newPowerUps = getNewPowerUpsPure randomNumbers removedSoftBlocks
+      let updatedPowerUps' = updatedPowerUps ++ newPowerUps
+
         -- Check if player collides with any detonating bomb
       let collision = any (checkCollision updatedPlayer') updatedBombs''''
 
@@ -1027,7 +1073,7 @@ update (MsgSetTime milli) = do                -- Handle received timestamp (main
           , obstacles = updatedObstacles'
           , gameOver = gameOver'
           , gameTimer = gameTimer'
-          , powerups = updatedPowerUps
+          , powerups = updatedPowerUps'
           }
       
       let modelGameOver = model { 

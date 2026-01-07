@@ -64,7 +64,7 @@ executable haskell-project
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.20.1.0, miso, containers
+    build-depends:    base ^>=4.20.1.0, miso, containers, random
 
     -- Directories containing source files.
     hs-source-dirs:   app
